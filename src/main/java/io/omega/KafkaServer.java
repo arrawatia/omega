@@ -1,10 +1,7 @@
 package io.omega;
 
-import org.elasticsearch.common.component.LifecycleComponent;
 
-/**
- * Created by arrawatia on 10/2/16.
- */
+
 // Lifecycle component
 public class KafkaServer {
 

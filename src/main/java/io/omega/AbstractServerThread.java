@@ -1,74 +1,102 @@
 package io.omega;
 
-/**
- * Created by arrawatia on 10/3/16.
- */
-public class AbstractServerThread {
-}
+import org.apache.kafka.common.network.KafkaChannel;
+import org.apache.kafka.common.network.Selector;
+
+import java.io.IOException;
+import java.net.InetAddress;
+import java.nio.channels.SocketChannel;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+public abstract class AbstractServerThread implements Runnable {
+
+    protected ConnectionQuotas connectionQuotas;
+    private CountDownLatch startupLatch = new CountDownLatch(1);
+    private CountDownLatch shutdownLatch = new CountDownLatch(1);
+    private AtomicBoolean alive = new AtomicBoolean(true);
 
 
-private[kafka] abstract class AbstractServerThread(connectionQuotas: ConnectionQuotas) extends Runnable with Logging {
+    public void wakeup() {
 
-private val startupLatch = new CountDownLatch(1)
-private val shutdownLatch = new CountDownLatch(1)
-private val alive = new AtomicBoolean(true)
-
-    def wakeup()
+    }
 
     /**
      * Initiates a graceful shutdown by signaling to stop and waiting for the shutdown to complete
      */
-    def shutdown(): Unit = {
-    alive.set(false)
-    wakeup()
-    shutdownLatch.await()
+    public void shutdown() {
+        alive.set(false);
+        wakeup();
+        try {
+            shutdownLatch.await();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     /**
      * Wait for the thread to completely start up
      */
-    def awaitStartup(): Unit = startupLatch.await
-
-/**
- * Record that the thread startup is complete
- */
-protected def startupComplete() = {
-    startupLatch.countDown()
+    public void awaitStartup() {
+        try {
+            startupLatch.await();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
-/**
- * Record that the thread shutdown is complete
- */
-protected def shutdownComplete() = shutdownLatch.countDown()
+    /**
+     * Record that the thread startup is complete
+     */
+    protected void startupComplete() {
+        startupLatch.countDown();
+    }
 
-/**
- * Is the server still running?
- */
-protected def isRunning = alive.get
+    /**
+     * Record that the thread shutdown is complete
+     */
+    protected void shutdownComplete() {
+        shutdownLatch.countDown();
+    }
+
+    /**
+     * Is the server still running?
+     */
+    protected void isRunning() {
+        alive.get();
+    }
 
     /**
      * Close the connection identified by `connectionId` and decrement the connection count.
      */
-    def close(selector: KSelector, connectionId: String) {
-    val channel = selector.channel(connectionId)
-    if (channel != null) {
-    debug(s"Closing selector connection $connectionId")
-    val address = channel.socketAddress
-    if (address != null)
-    connectionQuotas.dec(address)
-    selector.close(connectionId)
-    }
+    public void close(Selector selector, String connectionId) {
+        KafkaChannel channel = selector.channel(connectionId);
+        if (channel != null) {
+//    debug(s"Closing selector connection $connectionId")
+            InetAddress address = channel.socketAddress();
+            if (address != null)
+                connectionQuotas.dec(address);
+            selector.close(connectionId);
+        }
     }
 
     /**
      * Close `channel` and decrement the connection count.
      */
-    def close(channel: SocketChannel) {
-    if (channel != null) {
-    debug("Closing connection from " + channel.socket.getRemoteSocketAddress())
-    connectionQuotas.dec(channel.socket.getInetAddress)
-    swallowError(channel.socket().close())
-    swallowError(channel.close())
+    public void close(SocketChannel channel) {
+        if (channel != null) {
+//    debug("Closing connection from " + channel.socket.getRemoteSocketAddress())
+            connectionQuotas.dec(channel.socket().getInetAddress());
+            try {
+                channel.socket().close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            try {
+                channel.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
-    }
-    }
+}

@@ -1,38 +1,65 @@
 package io.omega;
 
-/**
- * Created by arrawatia on 10/3/16.
- */
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 public class ConnectionQuotas {
+
+    private final int defaultMax;
+    private final Map<String, Integer> overrideQuotas;
+    private Map<InetAddress, Integer> overrides;
+
+    public ConnectionQuotas(int defaultMax, Map<String, Integer> overrideQuotas) {
+        this.defaultMax = defaultMax;
+        this.overrideQuotas = overrideQuotas;
+        this.overrides = overrideQuotas.entrySet().stream()
+                .collect(Collectors.toMap(
+                        e -> {
+                            try {
+                                return InetAddress.getByName(e.getKey());
+                            } catch (UnknownHostException e1) {
+                                return null;
+                            }
+                        },
+                        e -> e.getValue()
+                ));
+    }
+
+    private Map<InetAddress, Integer> counts = new HashMap<InetAddress, Integer>();
+
+    public void inc(InetAddress address) {
+        synchronized (counts) {
+            Integer count = counts.getOrDefault(address, 0);
+            counts.put(address, count + 1);
+            Integer max = overrides.getOrDefault(address, this.defaultMax);
+            if (count >= max) {
+                throw new TooManyConnectionsException(address, max);
+            }
+        }
+    }
+
+    public void dec(InetAddress address) {
+        synchronized (counts) {
+
+            if (!counts.containsKey(address))
+                throw new IllegalArgumentException("Attempted to decrease connection count for " +
+                        "address with no connections, address:" + address);
+            int count = counts.get(address);
+            if (count == 1) {
+                counts.remove(address);
+            } else {
+                counts.put(address, count - 1);
+            }
+        }
+    }
+
+    public int get(InetAddress address) {
+        synchronized (counts) {
+            return counts.getOrDefault(address, 0);
+        }
+    }
+
 }
-class ConnectionQuotas(val defaultMax: Int, overrideQuotas: Map[String, Int]) {
-
-private val overrides = overrideQuotas.map { case (host, count) => (InetAddress.getByName(host), count) }
-private val counts = mutable.Map[InetAddress, Int]()
-
-    def inc(address: InetAddress) {
-    counts.synchronized {
-    val count = counts.getOrElseUpdate(address, 0)
-    counts.put(address, count + 1)
-    val max = overrides.getOrElse(address, defaultMax)
-    if (count >= max)
-    throw new TooManyConnectionsException(address, max)
-    }
-    }
-
-    def dec(address: InetAddress) {
-    counts.synchronized {
-    val count = counts.getOrElse(address,
-    throw new IllegalArgumentException(s"Attempted to decrease connection count for address with no connections, address: $address"))
-    if (count == 1)
-    counts.remove(address)
-    else
-    counts.put(address, count - 1)
-    }
-    }
-
-    def get(address: InetAddress): Int = counts.synchronized {
-    counts.getOrElse(address, 0)
-    }
-
-    }

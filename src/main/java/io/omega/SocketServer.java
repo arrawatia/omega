@@ -9,7 +9,9 @@ import java.util.List;
 public class SocketServer {
 
 
-
+    private final Integer numProcessorThreads;
+    private final Integer maxQueuedRequests;
+    private final int totalProcessorThreads;
     private List<String> endpoints = null;
 
     public SocketServer(ProxyServerConfig config, MetricsService metricsService, Time time){
@@ -18,22 +20,22 @@ public class SocketServer {
         this.maxQueuedRequests =  config.getInt(ProxyServerConfig.QueuedMaxRequestsProp);
         this.totalProcessorThreads = numProcessorThreads * endpoints.size();
 
-//        this.maxConnectionsPerIp = config.maxConnectionsPerIp
-//        this.maxConnectionsPerIpOverrides = config.maxConnectionsPerIpOverrides
-//
+        this.maxConnectionsPerIp = config.maxConnectionsPerIp
+        this.maxConnectionsPerIpOverrides = config.maxConnectionsPerIpOverrides
+
 //        this.logIdent = "[Socket Server on Broker " + config.brokerId + "], "
-//
-//        this.requestChannel = new kafka.network.RequestChannel(totalProcessorThreads, maxQueuedRequests)
-//        this.processors = new Array[Processor](totalProcessorThreads)
-//
-//        this.acceptors = mutable.Map[EndPoint, Acceptor]()
-//        this.connectionQuotas = _
-//
-//        this.allMetricNames = (0 until totalProcessorThreads).map { i =>
-//            tags = new util.HashMap[String, String]()
-//            tags.put("networkProcessor", i.toString)
-//            metrics.metricName("io-wait-ratio", "socket-server-metrics", tags)
-//        }
+
+        this.requestChannel = new kafka.network.RequestChannel(totalProcessorThreads, maxQueuedRequests)
+        this.processors = new Array[Processor](totalProcessorThreads)
+
+        this.acceptors = mutable.Map[EndPoint, Acceptor]()
+        this.connectionQuotas = _
+
+        this.allMetricNames = (0 until totalProcessorThreads).map { i =>
+            tags = new util.HashMap[String, String]()
+            tags.put("networkProcessor", i.toString)
+            metrics.metricName("io-wait-ratio", "socket-server-metrics", tags)
+        }
     }
     
     /**
@@ -42,10 +44,10 @@ public class SocketServer {
     public void doStartup() {
         synchronized (this){
 
-            this.connectionQuotas = new ConnectionQuotas(maxConnectionsPerIp, maxConnectionsPerIpOverrides)
+            this.connectionQuotas = new ConnectionQuotas(maxConnectionsPerIp, maxConnectionsPerIpOverrides);
 
-             this.sendBufferSize = config.socketSendBufferBytes
-             this.recvBufferSize = config.socketReceiveBufferBytes
+             this.sendBufferSize = config.socketSendBufferBytes;
+             this.recvBufferSize = config.socketReceiveBufferBytes;
 
              processorBeginIndex = 0;
             endpoints.ues.foreach { endpoint =>
