@@ -62,8 +62,8 @@ public abstract class AbstractServerThread implements Runnable {
     /**
      * Is the server still running?
      */
-    protected void isRunning() {
-        alive.get();
+    protected boolean isRunning() {
+        return alive.get();
     }
 
     /**

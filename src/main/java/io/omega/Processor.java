@@ -11,6 +11,8 @@ import org.apache.kafka.common.security.auth.KafkaPrincipal;
 import org.apache.kafka.common.utils.Time;
 
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.channels.SocketChannel;
 import java.util.HashMap;
 import java.util.Map;
@@ -22,6 +24,11 @@ public class Processor extends AbstractServerThread {
 
     private  SecurityProtocol protocol;
     private  Time time;
+
+    public int id() {
+        return id;
+    }
+
     private int id;
     private RequestChannel requestChannel;
     private Selector selector;
@@ -72,8 +79,8 @@ public class Processor extends AbstractServerThread {
     @Override
     public void run() {
         startupComplete();
-        while (isRunning) {
-//    try {
+        while (isRunning()) {
+    try {
             // setup any new connections that have been queued up
             configureNewConnections();
             // register any new responses for writing
@@ -82,25 +89,16 @@ public class Processor extends AbstractServerThread {
             processCompletedReceives();
             processCompletedSends();
             processDisconnected();
-            //    } catch {
-            //    // We catch all the throwables here to prevent the processor thread from exiting. We do
-            // this because
-            //    // letting a processor exit might cause a bigger impact on the broker. Usually the
-            // exceptions thrown would
-            //    // be either associated with a specific socket channel or a bad request. We just ignore the
-            // bad socket channel
-            //    // or request. This behavior might need to be reviewed if we see an exception that need the
-            // entire broker to stop.
-            //    case e: ControlThrowable => throw e
-            //    case e: Throwable =>
-            //    error("Processor got uncaught exception.", e)
-            //    }
-            //    }
-            //
-            //    debug("Closing selector - processor " + id)
-            //    swallowError(closeAll())
-            //    shutdownComplete();
-            //    }
+                } catch (Throwable e){
+                // We catch all the throwables here to prevent the processor thread from exiting. We do this because
+                // letting a processor exit might cause a bigger impact on the broker. Usually the exceptions thrown would
+                // be either associated with a specific socket channel or a bad request. We just ignore the  bad socket channel
+                // or request. This behavior might need to be reviewed if we see an exception that need the entire broker to stop.
+//                error("Processor got uncaught exception.", e)
+//                debug("Closing selector - processor " + id)
+                closeAll();
+                shutdownComplete();
+                }
         }
     }
 
@@ -187,7 +185,7 @@ public class Processor extends AbstractServerThread {
     private void processCompletedSends() {
         selector.completedSends().stream().forEach(
                 send -> {
-                    if (!inflightResponses.containsKey(send.destination()) {
+                    if (!inflightResponses.containsKey(send.destination())) {
                         throw new IllegalStateException("Send for ${send.destination} completed, but not in `inflightResponses`");
                     }
                     Response resp = inflightResponses.get(send.destination());
@@ -198,52 +196,55 @@ public class Processor extends AbstractServerThread {
                 });
     }
 
-    private def processDisconnected() {
-        selector.disconnected.asScala.foreach {
-            connectionId =>
-            val remoteHost = ConnectionId.fromString(connectionId).getOrElse {
-                throw new IllegalStateException(s"connectionId has unexpected format: " +
-                        "$connectionId")
-            }.remoteHost
-            inflightResponses.remove(connectionId).foreach(_.request.updateRequestMetrics())
-            // the channel has been closed by the selector but the quotas still need to be
-            // updated
-            connectionQuotas.dec(InetAddress.getByName(remoteHost))
-        }
+    private void processDisconnected() {
+        selector.disconnected().stream().forEach(
+                (String connectionId) -> {
+                    String remoteHost = ConnectionId.fromString(connectionId).remoteHost();
+                    if (remoteHost == null)
+                        throw new IllegalStateException("connectionId has unexpected format: " + connectionId);
+
+                    Response r = inflightResponses.remove(connectionId);
+//                r.request().updateRequestMetrics();
+                    // the channel has been closed by the selector but the quotas still need to be updated
+                    try {
+                        connectionQuotas.dec(InetAddress.getByName(remoteHost));
+                    } catch (UnknownHostException e) {
+                        e.printStackTrace();
+                    }
+                });
     }
 
     /**
      * Queue up a new connection for reading
      */
-    def accept(socketChannel:SocketChannel) {
-        newConnections.add(socketChannel)
-        wakeup()
+    public void  accept(SocketChannel socketChannel) {
+        newConnections.add(socketChannel);
+        wakeup();
     }
 
     /**
      * Register any new connections that have been queued up
      */
-    private def configureNewConnections() {
-        while (!newConnections.isEmpty) {
-            val channel = newConnections.poll()
+    private void configureNewConnections() {
+        while (!newConnections.isEmpty()) {
+            SocketChannel channel = (SocketChannel) newConnections.poll();
             try {
-                debug(s"Processor $id listening to new connection from ${channel.socket" +
-                        ".getRemoteSocketAddress}")
-                val localHost = channel.socket().getLocalAddress.getHostAddress
-                val localPort = channel.socket().getLocalPort
-                val remoteHost = channel.socket().getInetAddress.getHostAddress
-                val remotePort = channel.socket().getPort
-                val connectionId = ConnectionId(localHost, localPort, remoteHost, remotePort)
-                        .toString
-                selector.register(connectionId, channel)
-            } catch {
+//                debug(s"Processor $id listening to new connection from ${channel.socket" +
+//                        ".getRemoteSocketAddress}")
+                 String localHost = channel.socket().getLocalAddress().getHostAddress();
+                 int localPort = channel.socket().getLocalPort();
+                 String remoteHost = channel.socket().getInetAddress().getHostAddress();
+                 int remotePort = channel.socket().getPort();
+                 String connectionId = new ConnectionId(localHost, localPort, remoteHost, remotePort).toString();
+                selector.register(connectionId, channel);
+            } catch (Throwable t){
                 // We explicitly catch all non fatal exceptions and close the socket to avoid a
                 // socket leak. The other
                 // throwables will be caught in processor and logged as uncaught exceptions.
-                case NonFatal(e) =>
+//                case NonFatal(e) =>
                     // need to close the channel here to avoid a socket leak.
-                    close(channel)
-                    error(s"Processor $id closed connection from ${channel.getRemoteAddress}", e)
+                    close(channel);
+//                    error(s"Processor $id closed connection from ${channel.getRemoteAddress}", e)
             }
         }
     }
@@ -251,26 +252,24 @@ public class Processor extends AbstractServerThread {
     /**
      * Close the selector and all open connections
      */
-    private def closeAll() {
-        selector.channels.asScala.foreach {
-            channel =>
-            close(selector, channel.id)
-        }
-        selector.close()
+    private void closeAll() {
+        selector.channels().stream().forEach (channel -> close(selector, channel.id()));
+        selector.close();
     }
 
   /* For test usage */
-    private[network]
+    private KafkaChannel channel(String connectionId) {
 
-    def channel(connectionId:String):Option[KafkaChannel]=
-
-    Option(selector.channel(connectionId))
+        return selector.channel(connectionId);
+    }
 
     /**
      * Wakeup the thread for selection.
      */
     @Override
-    def wakeup = selector.wakeup()
+    public void wakeup () {
+        selector.wakeup();
+    }
 
 }
 
