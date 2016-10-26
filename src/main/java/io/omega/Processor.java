@@ -22,8 +22,8 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public class Processor extends AbstractServerThread {
 
 
-    private  SecurityProtocol protocol;
-    private  Time time;
+    private SecurityProtocol protocol;
+    private Time time;
 
     public int id() {
         return id;
@@ -33,8 +33,8 @@ public class Processor extends AbstractServerThread {
     private RequestChannel requestChannel;
     private Selector selector;
     private Queue newConnections = new ConcurrentLinkedQueue<SocketChannel>();
-    private Map <String, Response> inflightResponses = new HashMap<>();
-    private Map<String, String> metricTags = new HashMap<String, String>();
+    private Map<String, Response> inflightResponses = new HashMap<>();
+    private Map<String, String> metricTags = new HashMap<>();
 
     public Processor(int id,
                      Time time,
@@ -60,8 +60,7 @@ public class Processor extends AbstractServerThread {
                 "socket-server",
                 metricTags,
                 false,
-                ChannelBuilders.create(protocol, Mode.SERVER, LoginType.SERVER, channelConfigs,
-                        null, true));
+                ChannelBuilders.create(protocol, Mode.SERVER, LoginType.SERVER, channelConfigs, null, true));
 
     }
 
@@ -80,16 +79,16 @@ public class Processor extends AbstractServerThread {
     public void run() {
         startupComplete();
         while (isRunning()) {
-    try {
-            // setup any new connections that have been queued up
-            configureNewConnections();
-            // register any new responses for writing
-            processNewResponses();
-            poll();
-            processCompletedReceives();
-            processCompletedSends();
-            processDisconnected();
-                } catch (Throwable e){
+            try {
+                // setup any new connections that have been queued up
+                configureNewConnections();
+                // register any new responses for writing
+                processNewResponses();
+                poll();
+                processCompletedReceives();
+                processCompletedSends();
+                processDisconnected();
+            } catch (Throwable e) {
                 // We catch all the throwables here to prevent the processor thread from exiting. We do this because
                 // letting a processor exit might cause a bigger impact on the broker. Usually the exceptions thrown would
                 // be either associated with a specific socket channel or a bad request. We just ignore the  bad socket channel
@@ -98,13 +97,14 @@ public class Processor extends AbstractServerThread {
 //                debug("Closing selector - processor " + id)
                 closeAll();
                 shutdownComplete();
-                }
+            }
         }
     }
 
     private void processNewResponses() {
         Response curr = requestChannel.receiveResponse(this.id);
         while (curr != null) {
+        System.out.println("processNewResponses : " + curr);
             try {
                 switch (curr.responseAction()) {
                     case NOOP:
@@ -135,9 +135,12 @@ public class Processor extends AbstractServerThread {
 
     protected void sendResponse(Response response) {
 //            trace(s"Socket server received response to send, registering for write and " + "sending data: $response")
+        System.out.println("sendResponse : " + response);
+        System.out.println("sendResponse > response.responseSend().destination(): " + response.responseSend().destination());
 
 
         KafkaChannel channel = selector.channel(response.responseSend().destination());
+        System.out.println("sendResponse channel: " + channel);
         // `channel` can be null if the selector closed the connection because it was
         // idle for too long
         if (channel == null) {
@@ -153,38 +156,40 @@ public class Processor extends AbstractServerThread {
     private void poll() throws IOException {
         try {
             selector.poll(300);
-        }
-    catch(IllegalStateException| IOException e) {
+        } catch (IllegalStateException | IOException e) {
 //                error(s"Closing processor $id due to illegal state or IO exception")
-                closeAll();
-                shutdownComplete();
-                throw e;
+            closeAll();
+            shutdownComplete();
+            throw e;
 
         }
     }
 
     private void processCompletedReceives() {
         selector.completedReceives().stream().forEach(
-            receive -> {
-            try {
-                KafkaChannel channel = selector.channel(receive.source());
-                 Session session = new Session(new KafkaPrincipal(KafkaPrincipal.USER_TYPE, channel.principal().getName()), channel.socketAddress());
-                 Request req = new Request(id,  receive.source(), session,  receive.payload(), time.milliseconds(), protocol);
-                requestChannel.sendRequest(req);
-                selector.mute(receive.source());
-            } catch (Exception e) {
-                    // note that even though we got an exception, we can assume that receive
-                    // .source is valid. Issues with constructing a valid receive object were
-                    // handled earlier
+                receive -> {
+                    System.out.println("processCompletedReceives :" + receive);
+                    try {
+                        KafkaChannel channel = selector.channel(receive.source());
+                        Session session = new Session(new KafkaPrincipal(KafkaPrincipal.USER_TYPE, channel.principal().getName()), channel.socketAddress());
+                        Request req = new Request(id, receive.source(), session, receive.payload(), time.milliseconds(), protocol);
+                        requestChannel.sendRequest(req);
+                        selector.mute(receive.source());
+                    } catch (Exception e) {
+                        // note that even though we got an exception, we can assume that receive
+                        // .source is valid. Issues with constructing a valid receive object were
+                        // handled earlier
 //                    error(s"Closing socket for ${receive.source} because of error", e);
-                    close(selector, receive.source());
-            }
-        });
+                        close(selector, receive.source());
+                    }
+                });
     }
 
     private void processCompletedSends() {
         selector.completedSends().stream().forEach(
                 send -> {
+                    System.out.println("processCompletedSends :" + send);
+
                     if (!inflightResponses.containsKey(send.destination())) {
                         throw new IllegalStateException("Send for ${send.destination} completed, but not in `inflightResponses`");
                     }
@@ -217,7 +222,7 @@ public class Processor extends AbstractServerThread {
     /**
      * Queue up a new connection for reading
      */
-    public void  accept(SocketChannel socketChannel) {
+    public void accept(SocketChannel socketChannel) {
         newConnections.add(socketChannel);
         wakeup();
     }
@@ -231,19 +236,19 @@ public class Processor extends AbstractServerThread {
             try {
 //                debug(s"Processor $id listening to new connection from ${channel.socket" +
 //                        ".getRemoteSocketAddress}")
-                 String localHost = channel.socket().getLocalAddress().getHostAddress();
-                 int localPort = channel.socket().getLocalPort();
-                 String remoteHost = channel.socket().getInetAddress().getHostAddress();
-                 int remotePort = channel.socket().getPort();
-                 String connectionId = new ConnectionId(localHost, localPort, remoteHost, remotePort).toString();
+                String localHost = channel.socket().getLocalAddress().getHostAddress();
+                int localPort = channel.socket().getLocalPort();
+                String remoteHost = channel.socket().getInetAddress().getHostAddress();
+                int remotePort = channel.socket().getPort();
+                String connectionId = new ConnectionId(localHost, localPort, remoteHost, remotePort).toString();
                 selector.register(connectionId, channel);
-            } catch (Throwable t){
+            } catch (Throwable t) {
                 // We explicitly catch all non fatal exceptions and close the socket to avoid a
                 // socket leak. The other
                 // throwables will be caught in processor and logged as uncaught exceptions.
 //                case NonFatal(e) =>
-                    // need to close the channel here to avoid a socket leak.
-                    close(channel);
+                // need to close the channel here to avoid a socket leak.
+                close(channel);
 //                    error(s"Processor $id closed connection from ${channel.getRemoteAddress}", e)
             }
         }
@@ -253,13 +258,12 @@ public class Processor extends AbstractServerThread {
      * Close the selector and all open connections
      */
     private void closeAll() {
-        selector.channels().stream().forEach (channel -> close(selector, channel.id()));
+        selector.channels().stream().forEach(channel -> close(selector, channel.id()));
         selector.close();
     }
 
-  /* For test usage */
+    /* For test usage */
     private KafkaChannel channel(String connectionId) {
-
         return selector.channel(connectionId);
     }
 
@@ -267,7 +271,8 @@ public class Processor extends AbstractServerThread {
      * Wakeup the thread for selection.
      */
     @Override
-    public void wakeup () {
+    public void wakeup() {
+        System.out.println("waking up " + id);
         selector.wakeup();
     }
 

@@ -4,9 +4,6 @@ import org.apache.kafka.common.protocol.SecurityProtocol;
 
 import java.nio.ByteBuffer;
 
-/**
- * Created by sumit on 10/24/16.
- */
 public class EndPoint {
 
 

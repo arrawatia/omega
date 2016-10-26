@@ -6,17 +6,17 @@ package io.omega;
 public class ConnectionId {
 
 
-        public static ConnectionId fromString(String s){
-            String[] tmp = s.split("-");
+    public static ConnectionId fromString(String s) {
+        String[] tmp = s.split("-");
 
-            //case Array(local, remote) =>
+        //case Array(local, remote) =>
 
 //            BrokerEndPoint.parseHostPort(local).flatMap { case (localHost, localPort) =>
 //                BrokerEndPoint.parseHostPort(remote).map { case (remoteHost, remotePort) =>
 //                ConnectionId(localHost, localPort, remoteHost, remotePort)
-            return null;
+        return null;
 
-        }
+    }
 
     public String localHost() {
         return localHost;
@@ -48,7 +48,7 @@ public class ConnectionId {
 
 
     @Override
-        public String toString() {
-            return this.localHost + this.localPort + "-" + this.remoteHost + this.remotePort;
-        }
+    public String toString() {
+        return this.localHost + this.localPort + "-" + this.remoteHost + this.remotePort;
+    }
 }

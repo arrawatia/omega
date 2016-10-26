@@ -1,47 +1,57 @@
 package io.omega;
 
-/**
- * Created by sumit on 10/24/16.
- */
-public class KafkaRequestHandler {
+public class KafkaRequestHandler implements Runnable {
 
-    class KafkaRequestHandler(id: Int,
-    brokerId: Int,
-    val aggregateIdleMeter: Meter,
-    val totalHandlerThreads: Int,
-    val requestChannel: RequestChannel,
-    apis: KafkaApis) extends Runnable with Logging {
-        this.logIdent = "[Kafka Request Handler " + id + " on Broker " + brokerId + "], "
+    int id;
+    int brokerId;
 
-        def run() {
-            while(true) {
-                try {
-                    var req : RequestChannel.Request = null
-                    while (req == null) {
-                        // We use a single meter for aggregate idle percentage for the thread pool.
-                        // Since meter is calculated as total_recorded_value / time_window and
-                        // time_window is independent of the number of threads, each recorded idle
-                        // time should be discounted by # threads.
-                        val startSelectTime = SystemTime.nanoseconds
-                        req = requestChannel.receiveRequest(300)
-                        val idleTime = SystemTime.nanoseconds - startSelectTime
-                        aggregateIdleMeter.mark(idleTime / totalHandlerThreads)
-                    }
 
-                    if(req eq RequestChannel.AllDone) {
-                        debug("Kafka request handler %d on broker %d received shut down command".format(
-                                id, brokerId))
-                        return
-                    }
-                    req.requestDequeueTimeMs = SystemTime.milliseconds
-                    trace("Kafka request handler %d on broker %d handling request %s".format(id, brokerId, req))
-                    apis.handle(req)
-                } catch {
-                    case e: Throwable => error("Exception when handling request", e)
+    //    Meter aggregateIdleMeter;
+    int totalHandlerThreads;
+    RequestChannel requestChannel;
+    KafkaApis apis;
+
+    public KafkaRequestHandler(int id, int brokerId, int totalHandlerThreads, RequestChannel requestChannel, KafkaApis apis) {
+        this.id = id;
+        this.brokerId = brokerId;
+        this.totalHandlerThreads = totalHandlerThreads;
+        this.requestChannel = requestChannel;
+        this.apis = apis;
+    }
+
+    //    apis: KafkaApis)   {
+//        this.logIdent = "[Kafka Request Handler " + id + " on Broker " + brokerId + "], "
+
+    public void run() {
+        while (true) {
+            try {
+                Request req = null;
+                while (req == null) {
+                    // We use a single meter for aggregate idle percentage for the thread pool.
+                    // Since meter is calculated as total_recorded_value / time_window and
+                    // time_window is independent of the number of threads, each recorded idle
+                    // time should be discounted by # threads.
+//                         startSelectTime = SystemTime.nanoseconds
+                    req = requestChannel.receiveRequest(300L);
+//                        val idleTime = SystemTime.nanoseconds - startSelectTime
+//                        aggregateIdleMeter.mark(idleTime / totalHandlerThreads)
                 }
+
+                if (req.equals(RequestChannel.allDone())) {
+//                        debug("Kafka request handler %d on broker %d received shut down command".format(id, brokerId))
+                    return;
+                }
+//                    req.requestDequeueTimeMs = SystemTime.milliseconds
+//                    trace("Kafka request handler %d on broker %d handling request %s".format(id, brokerId, req))
+                    apis.handle(req, requestChannel);
+            } catch (Throwable e) {
+//                     error("Exception when handling request", e)
             }
         }
+    }
 
-        def shutdown(): Unit = requestChannel.sendRequest(RequestChannel.AllDone)
+    public void shutdown() {
+        requestChannel.sendRequest(RequestChannel.allDone());
     }
 }
+

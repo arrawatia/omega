@@ -1,16 +1,44 @@
 package io.omega;
 
 
+import org.apache.kafka.common.protocol.ApiKeys;
+import org.apache.kafka.common.protocol.Protocol;
 import org.apache.kafka.common.protocol.SecurityProtocol;
+import org.apache.kafka.common.requests.AbstractRequest;
+import org.apache.kafka.common.requests.ApiVersionsRequest;
+import org.apache.kafka.common.requests.RequestHeader;
 
 import java.nio.ByteBuffer;
 
 public class Request {
     private final short requestId;
     private final Integer processor;
+    private final ByteBuffer buffer;
+    private final SecurityProtocol securityProtocol;
+    private final RequestHeader header;
+    private final String connectionId;
+
+    public RequestHeader header() {
+        return header;
+    }
+
+    public AbstractRequest body() {
+        return body;
+    }
+
+    private final AbstractRequest body;
+
+    public short requestId() {
+        return requestId;
+    }
+
+
+    public SecurityProtocol securityProtocol() {
+        return securityProtocol;
+    }
 
     public String connectionId(){
-        return null;
+        return connectionId;
     }
     volatile Long requestDequeueTimeMs = -1L;
     volatile Long apiLocalCompleteTimeMs = -1L;
@@ -22,8 +50,26 @@ public class Request {
         // These need to be volatile because the readers are in the network thread and the writers are in the request
         // handler threads or the purgatory threads
 
-        requestId = buffer.getShort();
+        this.requestId = buffer.getShort();
+        this.buffer = buffer;
+        this.securityProtocol = securityProtocol;
         this.processor = processor;
+        buffer.rewind();
+        this.header = RequestHeader.parse(buffer);
+        this.body = parseBody(buffer);
+        this.connectionId = connectionId;
+    }
+
+    private AbstractRequest parseBody(ByteBuffer buffer) {
+        try {
+                // For unsupported version of ApiVersionsRequest, create a dummy request to enable an error response to be returned later
+                if (header.apiKey() == ApiKeys.API_VERSIONS.id && !Protocol.apiVersionSupported(header.apiKey(), header.apiVersion()))
+                    return new ApiVersionsRequest();
+                else
+                    return AbstractRequest.getRequest(header.apiKey(), header.apiVersion(), buffer);
+            } catch (Throwable e) {
+            throw new RuntimeException("Error getting request for apiKey:" + header.apiKey() + " and apiVersion: "+ header.apiVersion(), e);
+        }
     }
 
     public int processor(){

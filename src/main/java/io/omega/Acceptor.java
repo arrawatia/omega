@@ -18,22 +18,23 @@ import java.util.Set;
 public class Acceptor extends AbstractServerThread {
 
     private final Selector nioSelector;
-    private final Integer recvBufferSize;
+    private final int recvBufferSize;
     private final int sendBufferSize;
     private final Processor[] processors;
     ServerSocketChannel serverChannel;
 
-    public Acceptor(EndPoint endPoint, int sendBufferSize, Integer recvBufferSize, int brokerId, Processor[] processors, ConnectionQuotas connectionQuotas) throws IOException {
+    public Acceptor(EndPoint endPoint, int sendBufferSize, int recvBufferSize, int brokerId, Processor[] processors, ConnectionQuotas connectionQuotas) throws IOException {
 
         this.nioSelector = Selector.open();
-        this.serverChannel = openServerSocket(endPoint.host(), endPoint.port());
         this.sendBufferSize = sendBufferSize;
+        System.out.println("Acceptor : recvBufferSize=" + recvBufferSize);
         this.recvBufferSize = recvBufferSize;
         this.processors = processors;
         this.connectionQuotas = connectionQuotas;
+        this.serverChannel = openServerSocket(endPoint.host(), endPoint.port());
         synchronized (this) {
             for (Processor processor : processors) {
-                Utils.newThread("kafka-network-thread-%d-%s-%d".format(""+ brokerId, endPoint.protocolType().toString(), processor.id()), processor, false).start();
+                Utils.newThread("kafka-network-thread-%d-%s-%d".format("" + brokerId, endPoint.protocolType().toString(), processor.id()), processor, false).start();
             }
         }
     }
@@ -43,8 +44,8 @@ public class Acceptor extends AbstractServerThread {
      */
     public void run() {
         try {
-        serverChannel.register(nioSelector, SelectionKey.OP_ACCEPT);
-        startupComplete();
+            serverChannel.register(nioSelector, SelectionKey.OP_ACCEPT);
+            startupComplete();
             int currentProcessor = 0;
             while (isRunning()) {
                 try {
@@ -68,7 +69,7 @@ public class Acceptor extends AbstractServerThread {
                             }
                         }
                     }
-                } catch (Throwable e){
+                } catch (Throwable e) {
                     // We catch all the throwables to prevent the acceptor thread from exiting on exceptions due
                     // to a select operation on a specific channel or a bad request. We don't want
                     // the broker to stop responding to requests from other clients in these scenarios.
@@ -94,33 +95,34 @@ public class Acceptor extends AbstractServerThread {
         }
     }
 
-  /*
-   * Create a server socket to listen for connections on.
-   */
-private ServerSocketChannel openServerSocket(String host, int port) throws IOException {
-    InetSocketAddress socketAddress = (host == null || host.trim().isEmpty()) ? new InetSocketAddress(port) : new InetSocketAddress(host, port);
-     serverChannel = ServerSocketChannel.open();
-    serverChannel.configureBlocking(false);
-    if (recvBufferSize != Selectable.USE_DEFAULT_BUFFER_SIZE)
-        serverChannel.socket().setReceiveBufferSize(recvBufferSize);
+    /*
+     * Create a server socket to listen for connections on.
+     */
+    private ServerSocketChannel openServerSocket(String host, int port) throws IOException {
+        InetSocketAddress socketAddress = (host == null || host.trim().isEmpty()) ? new InetSocketAddress(port) : new InetSocketAddress(host, port);
+        serverChannel = ServerSocketChannel.open();
+        serverChannel.configureBlocking(false);
+        System.out.println(recvBufferSize);
+        if (recvBufferSize != Selectable.USE_DEFAULT_BUFFER_SIZE)
+            serverChannel.socket().setReceiveBufferSize(recvBufferSize);
 
-    try {
-    serverChannel.socket().bind(socketAddress);
+        try {
+            serverChannel.socket().bind(socketAddress);
 //    info("Awaiting socket connections on %s:%d.".format(socketAddress.getHostString, serverChannel.socket.getLocalPort))
-    } catch (SocketException e) {
-    throw new KafkaException("Socket server failed to bind to %s:%d: %s.".format(socketAddress.getHostString(), port, e.getMessage()), e);
-    }
-     return serverChannel;
+        } catch (SocketException e) {
+            throw new KafkaException("Socket server failed to bind to %s:%d: %s.".format(socketAddress.getHostString(), port, e.getMessage()), e);
+        }
+        return serverChannel;
     }
 
-  /*
-   * Accept a new connection
-   */
-    public void  accept( SelectionKey key , Processor processor) {
+    /*
+     * Accept a new connection
+     */
+    public void accept(SelectionKey key, Processor processor) {
         SocketChannel socketChannel = null;
         try {
-        ServerSocketChannel serverSocketChannel = (ServerSocketChannel) key.channel();
-         socketChannel = serverSocketChannel.accept();
+            ServerSocketChannel serverSocketChannel = (ServerSocketChannel) key.channel();
+            socketChannel = serverSocketChannel.accept();
             connectionQuotas.inc(socketChannel.socket().getInetAddress());
             socketChannel.configureBlocking(false);
             socketChannel.socket().setTcpNoDelay(true);
@@ -134,9 +136,9 @@ private ServerSocketChannel openServerSocket(String host, int port) throws IOExc
 //                            socketChannel.socket.getReceiveBufferSize, recvBufferSize))
 
             processor.accept(socketChannel);
-        } catch (Exception e){
+        } catch (Exception e) {
 //                info("Rejected connection from %s, address already has the configured maximum of %d connections.".format(e.ip, e.count))
-                close(socketChannel);
+            close(socketChannel);
         }
     }
 
@@ -148,6 +150,6 @@ private ServerSocketChannel openServerSocket(String host, int port) throws IOExc
         nioSelector.wakeup();
     }
 
-    }
+}
 
 

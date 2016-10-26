@@ -44,4 +44,14 @@ public class Response {
     public Response(Request request, Send send){
             this(request.processor(), request, send);
     }
+
+    @Override
+    public String toString() {
+        return "Response{" +
+                "request=" + request +
+                ", responseAction=" + responseAction +
+                ", processor=" + processor +
+                ", responseSend=" + responseSend +
+                '}';
+    }
 }
