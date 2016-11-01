@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -94,6 +95,20 @@ public class KafkaProtocolClient {
         } else {
             MetadataResponse response = new MetadataResponse(responseBody);
             return response.cluster().nodes();
+        }
+    }
+
+    public List<MetadataResponse.TopicMetadata> getTopicMetadata(String topic, int timeOutInMs){
+        ArrayList<String> topics = new ArrayList<>();
+        topics.add(topic);
+        MetadataRequest request = new MetadataRequest(topics);
+        Struct responseBody = sendAnyNode(ApiKeys.METADATA, request, timeOutInMs);
+
+        if (responseBody == null) {
+            return null;
+        } else {
+            MetadataResponse response = new MetadataResponse(responseBody);
+            return (List<MetadataResponse.TopicMetadata>) response.topicMetadata();
         }
     }
 
