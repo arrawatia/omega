@@ -9,6 +9,8 @@ import org.apache.kafka.common.network.Selector;
 import org.apache.kafka.common.protocol.SecurityProtocol;
 import org.apache.kafka.common.security.auth.KafkaPrincipal;
 import org.apache.kafka.common.utils.Time;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -20,21 +22,16 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class Processor extends AbstractServerThread {
+    private static final Logger log = LoggerFactory.getLogger(Processor.class);
 
-
-    private SecurityProtocol protocol;
-    private Time time;
-
-    public int id() {
-        return id;
-    }
-
-    private int id;
-    private RequestChannel requestChannel;
-    private Selector selector;
-    private Queue newConnections = new ConcurrentLinkedQueue<SocketChannel>();
-    private Map<String, Response> inflightResponses = new HashMap<>();
-    private Map<String, String> metricTags = new HashMap<>();
+    private final SecurityProtocol protocol;
+    private final Time time;
+    private final int id;
+    private final RequestChannel requestChannel;
+    private final Selector selector;
+    private final Queue newConnections = new ConcurrentLinkedQueue<SocketChannel>();
+    private final Map<String, Response> inflightResponses = new HashMap<>();
+    private final Map<String, String> metricTags = new HashMap<>();
 
     public Processor(int id,
                      Time time,
@@ -61,7 +58,6 @@ public class Processor extends AbstractServerThread {
                 metricTags,
                 false,
                 ChannelBuilders.create(protocol, Mode.SERVER, LoginType.SERVER, channelConfigs, null, true));
-
     }
 
 
@@ -93,9 +89,8 @@ public class Processor extends AbstractServerThread {
                 // letting a processor exit might cause a bigger impact on the broker. Usually the exceptions thrown would
                 // be either associated with a specific socket channel or a bad request. We just ignore the  bad socket channel
                 // or request. This behavior might need to be reviewed if we see an exception that need the entire broker to stop.
-//                error("Processor got uncaught exception.", e)
-//                debug("Closing selector - processor " + id)
-                e.printStackTrace();
+                log.error("Processor got uncaught exception.", e);
+                log.debug("Closing selector - processor " + id);
             }
         }
         closeAll();
@@ -105,7 +100,7 @@ public class Processor extends AbstractServerThread {
     private void processNewResponses() {
         Response curr = requestChannel.receiveResponse(this.id);
         while (curr != null) {
-        System.out.println("processNewResponses : " + curr);
+            log.trace("Processing new response {}", curr);
             try {
                 switch (curr.responseAction()) {
                     case NOOP:
@@ -113,8 +108,7 @@ public class Processor extends AbstractServerThread {
                         // pipelined requests
                         // that are sitting in the server's socket buffer
                         //    curr.request.updateRequestMetrics;
-                        //    trace("Socket server received empty response to send, registering
-                        // for read: " + curr)
+                        log.trace("Socket server received empty response to send, registering for read: {}", curr);
                         selector.unmute(curr.request().connectionId());
                         break;
                     case SEND:
@@ -122,7 +116,7 @@ public class Processor extends AbstractServerThread {
                         break;
                     case CLOSE:
 //    curr.request.updateRequestMetrics
-//    trace("Closing socket connection actively according to the response code.")
+                        log.trace("Closing socket connection actively according to the response code.");
                         close(selector, curr.request().connectionId());
                 }
             } finally {
@@ -132,21 +126,14 @@ public class Processor extends AbstractServerThread {
         }
     }
 
-  /* `protected` for test usage */
-
+    /* `protected` for test usage */
     protected void sendResponse(Response response) {
-//            trace(s"Socket server received response to send, registering for write and " + "sending data: $response")
-        System.out.println("sendResponse : " + response);
-        System.out.println("sendResponse > response.responseSend().destination(): " + response.responseSend().destination());
-
+        log.trace("Socket server received response to send, registering for write and sending data to {}: {}", response.responseSend().destination(), response);
 
         KafkaChannel channel = selector.channel(response.responseSend().destination());
-        System.out.println("sendResponse channel: " + channel);
-        // `channel` can be null if the selector closed the connection because it was
-        // idle for too long
+        // `channel` can be null if the selector closed the connection because it was idle for too long
         if (channel == null) {
-//            warn(s"Attempting to send response via channel for which there is no open " +
-//                    "connection, connection id $id")
+            log.warn("Attempting to send response via channel for which there is no open connection, connection id: {}", this.id);
 //            response.request().updateRequestMetrics();
         } else {
             selector.send(response.responseSend());
@@ -158,8 +145,7 @@ public class Processor extends AbstractServerThread {
         try {
             selector.poll(300);
         } catch (IllegalStateException | IOException e) {
-//            e.printStackTrace();
-//                error(s"Closing processor $id due to illegal state or IO exception")
+            log.error("Closing processor {} due to illegal state or IO exception", id);
             closeAll();
             shutdownComplete();
             throw e;
@@ -170,7 +156,7 @@ public class Processor extends AbstractServerThread {
     private void processCompletedReceives() {
         selector.completedReceives().stream().forEach(
                 receive -> {
-                    System.out.println("processCompletedReceives :" + receive);
+                    log.trace("Processing completed receive : {}", receive);
                     try {
                         KafkaChannel channel = selector.channel(receive.source());
                         Session session = new Session(new KafkaPrincipal(KafkaPrincipal.USER_TYPE, channel.principal().getName()), channel.socketAddress());
@@ -178,11 +164,10 @@ public class Processor extends AbstractServerThread {
                         requestChannel.sendRequest(req);
                         selector.mute(receive.source());
                     } catch (Exception e) {
-                        e.printStackTrace();
                         // note that even though we got an exception, we can assume that receive
                         // .source is valid. Issues with constructing a valid receive object were
                         // handled earlier
-//                    error(s"Closing socket for ${receive.source} because of error", e);
+                        log.error("Closing socket for {} because of error", receive.source(), e);
                         close(selector, receive.source());
                     }
                 });
@@ -191,10 +176,10 @@ public class Processor extends AbstractServerThread {
     private void processCompletedSends() {
         selector.completedSends().stream().forEach(
                 send -> {
-                    System.out.println("processCompletedSends :" + send);
+                    log.trace("Processing completed send : {}", send);
 
                     if (!inflightResponses.containsKey(send.destination())) {
-                        throw new IllegalStateException("Send for ${send.destination} completed, but not in `inflightResponses`");
+                        throw new IllegalStateException("Send for " + send.destination() + " completed, but not in `inflightResponses`");
                     }
                     Response resp = inflightResponses.get(send.destination());
                     inflightResponses.remove(send.destination());
@@ -217,7 +202,7 @@ public class Processor extends AbstractServerThread {
                     try {
                         connectionQuotas.dec(InetAddress.getByName(remoteHost));
                     } catch (UnknownHostException e) {
-                        e.printStackTrace();
+                        log.error("Error while decrementing quota for {}", remoteHost, e);
                     }
                 });
     }
@@ -236,24 +221,22 @@ public class Processor extends AbstractServerThread {
     private void configureNewConnections() {
         while (!newConnections.isEmpty()) {
             SocketChannel channel = (SocketChannel) newConnections.poll();
+            String remoteHost = null;
             try {
-//                debug(s"Processor $id listening to new connection from ${channel.socket" +
-//                        ".getRemoteSocketAddress}")
+                log.debug("Processor {} listening to new connection from {}", id, channel.socket().getRemoteSocketAddress());
                 String localHost = channel.socket().getLocalAddress().getHostAddress();
                 int localPort = channel.socket().getLocalPort();
-                String remoteHost = channel.socket().getInetAddress().getHostAddress();
+                remoteHost = channel.socket().getInetAddress().getHostAddress();
                 int remotePort = channel.socket().getPort();
                 String connectionId = new ConnectionId(localHost, localPort, remoteHost, remotePort).toString();
                 selector.register(connectionId, channel);
             } catch (Throwable t) {
-                t.printStackTrace();
                 // We explicitly catch all non fatal exceptions and close the socket to avoid a
-                // socket leak. The other
-                // throwables will be caught in processor and logged as uncaught exceptions.
+                // socket leak. The other throwables will be caught in processor and logged as uncaught exceptions.
 //                case NonFatal(e) =>
                 // need to close the channel here to avoid a socket leak.
                 close(channel);
-//                    error(s"Processor $id closed connection from ${channel.getRemoteAddress}", e)
+                log.error("Processor {} closed connection from {}", id, remoteHost, t);
             }
         }
     }
@@ -276,9 +259,14 @@ public class Processor extends AbstractServerThread {
      */
     @Override
     public void wakeup() {
-        System.out.println("waking up " + id);
+        log.trace("waking up " + id);
         selector.wakeup();
     }
+
+    public int id() {
+        return id;
+    }
+
 
 }
 

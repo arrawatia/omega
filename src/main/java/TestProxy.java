@@ -1,5 +1,3 @@
-package io.omega;
-
 import org.apache.kafka.clients.CommonClientConfigs;
 
 import java.util.HashMap;

@@ -4,6 +4,8 @@ import org.apache.kafka.common.metrics.Metrics;
 import org.apache.kafka.common.protocol.SecurityProtocol;
 import org.apache.kafka.common.utils.Time;
 import org.apache.kafka.common.utils.Utils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -13,8 +15,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-//Lifecycle component
+
 public class SocketServer {
+    private static final Logger log = LoggerFactory.getLogger(SocketServer.class);
 
     private final int numProcessorThreads;
     private final int maxQueuedRequests;
@@ -31,11 +34,10 @@ public class SocketServer {
     private final Integer socketRequestMaxBytes;
     private final Long connectionsMaxIdleMs;
     private final ProxyServerConfig config;
-    private Map<SecurityProtocol, EndPoint> endpoints = null;
+    private final Map<SecurityProtocol, EndPoint> endpoints;
     private ConnectionQuotas connectionQuotas;
 
     public static Map<String, String> getMapFromCsv(String csv) {
-        System.out.println("---" + csv);
         if(csv.isEmpty()){
             return new HashMap<>();
         }
@@ -84,13 +86,12 @@ public class SocketServer {
     }
 
     private Map<SecurityProtocol, EndPoint> getListeners(List<String> endpointStrings) {
-//        list.stream().map(listener -> EndPoint.createEndPoint(listener)).map(ep -> ep.protocolType -> ep).toMap
-        Map<SecurityProtocol, EndPoint> tmp = new HashMap<>();
+        Map<SecurityProtocol, EndPoint> endpoints = new HashMap<>();
         for(String endpointString: endpointStrings) {
             EndPoint e = EndPoint.createEndPoint(endpointString);
-            tmp.put(e.protocolType(), e);
+            endpoints.put(e.protocolType(), e);
         }
-        return tmp;
+        return endpoints;
     }
 
     /**
@@ -112,7 +113,6 @@ public class SocketServer {
                 acceptors.put(endpoint, acceptor);
                 Utils.newThread("kafka-socket-acceptor-%s-%d".format(protocol.toString(), endpoint.port()), acceptor, false).start();
                 acceptor.awaitStartup();
-
                 processorBeginIndex = processorEndIndex;
             }
         }
@@ -133,10 +133,10 @@ public class SocketServer {
      * Shutdown the socket server
      */
     public synchronized void shutdown() {
-//        info("Shutting down");
+        log.info("Shutting down");
         acceptors.values().stream().forEach(acceptor -> acceptor.shutdown());
         Arrays.stream(processors).forEach(processor -> processor.shutdown());
-//        info("Shutdown completed");
+        log.info("Shutdown completed");
     }
 
     public int boundPort(SecurityProtocol protocol) {

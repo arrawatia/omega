@@ -44,10 +44,10 @@ public class EndPoint {
         System.out.println(connectionString);
         Matcher matcher = PROTOCOL_HOST_PORT_PATTERN.matcher(connectionString);
         if (matcher.matches()) {
-            System.out.println(matcher.group(0));
-            System.out.println(matcher.group(1));
-            System.out.println(matcher.group(2));
-            System.out.println(matcher.group(3));
+//            System.out.println(matcher.group(0));
+//            System.out.println(matcher.group(1));
+//            System.out.println(matcher.group(2));
+//            System.out.println(matcher.group(3));
             SecurityProtocol sp = SecurityProtocol.forName(matcher.group(1));
             String host = matcher.group(2);
             int port = Integer.parseInt(matcher.group(3));

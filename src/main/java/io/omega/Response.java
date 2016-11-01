@@ -1,16 +1,16 @@
 package io.omega;
 
 import org.apache.kafka.common.network.Send;
-import org.apache.kafka.common.utils.SystemTime;
 
 public class Response {
+
+    public enum ResponseAction {NOOP, SEND, CLOSE}
 
     private final Request request;
     private final ResponseAction responseAction;
     private final Integer processor;
     private final Send responseSend;
 
-    public enum ResponseAction {NOOP, SEND, CLOSE}
 
     public ResponseAction responseAction() {
         return this.responseAction;

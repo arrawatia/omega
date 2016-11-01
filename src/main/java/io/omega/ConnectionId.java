@@ -1,8 +1,12 @@
 package io.omega;
 
 import org.apache.kafka.common.utils.Utils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ConnectionId {
+
+    private static final Logger log = LoggerFactory.getLogger(ConnectionId.class);
 
     private final String localHost;
     private final int localPort;
@@ -18,8 +22,7 @@ public class ConnectionId {
 
     public static ConnectionId fromString(String s) {
         String[] hostPorts = s.split("-");
-        System.out.println("ConnectionId > fromString " + s);
-
+        log.debug("ConnectionId > fromString {}", s);
         String localHostPort = hostPorts[0];
         String localHost = Utils.getHost(localHostPort);
         int localPort = Utils.getPort(localHostPort);

@@ -1,12 +1,13 @@
 package io.omega;
 
-import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.protocol.ApiKeys;
 import org.apache.kafka.common.protocol.SecurityProtocol;
 import org.apache.kafka.common.requests.ProduceRequest;
 import org.apache.kafka.common.requests.RequestHeader;
 import org.apache.kafka.common.requests.RequestSend;
 import org.apache.kafka.common.security.auth.KafkaPrincipal;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -21,9 +22,12 @@ import java.util.concurrent.TimeUnit;
 
 
 public class RequestChannel {
+
+    private static final Logger log = LoggerFactory.getLogger(RequestChannel.class);
+
     private final ArrayBlockingQueue<Request> requestQueue;
-    List<ResponseListener> responseListeners;
-    BlockingQueue<Response>[] responseQueues;
+    private final List<ResponseListener> responseListeners;
+    private final BlockingQueue<Response>[] responseQueues;
 
     public RequestChannel(Integer numProcessors, Integer queueSize) {
         this.responseListeners = new ArrayList<>();
@@ -68,9 +72,10 @@ public class RequestChannel {
     /** Send a response back to the socket server to be sent over the network */
     public void sendResponse(Response response) {
         responseQueues[response.processor()].add(response);
-        System.out.println("sendResponse > responseQueues :");
-                responseQueues[response.processor()].stream().forEach(System.out::println);
-        System.out.println(responseListeners);
+
+        if(log.isTraceEnabled())
+            responseQueues[response.processor()].stream().forEach(q -> log.trace("responseQueues for {}", response.processor()));
+
         for (ResponseListener listener : this.responseListeners) {
             listener.onResponse(response.processor());
         }
@@ -95,7 +100,7 @@ public class RequestChannel {
         try {
             return requestQueue.poll(timeout, TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            log.error("Error while receiving request ", e);
             return null;
         }
     }
@@ -105,7 +110,7 @@ public class RequestChannel {
         try {
             return requestQueue.take();
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            log.error("Error while receiving request ", e);
             return null;
         }
     }
@@ -128,7 +133,6 @@ public class RequestChannel {
 
     public static Request allDone(){
         Session allDoneSession = null;
-
         try {
             allDoneSession = new Session(KafkaPrincipal.ANONYMOUS, InetAddress.getLocalHost());
         } catch (UnknownHostException e) {
@@ -139,7 +143,7 @@ public class RequestChannel {
 
     public static ByteBuffer getShutdownReceive() {
         RequestHeader emptyRequestHeader = new RequestHeader(ApiKeys.PRODUCE.id, "", 0);
-        ProduceRequest emptyProduceRequest = new ProduceRequest((short) 0, 0, new HashMap<TopicPartition, ByteBuffer>());
+        ProduceRequest emptyProduceRequest = new ProduceRequest((short) 0, 0, new HashMap<>());
         return RequestSend.serialize(emptyRequestHeader, emptyProduceRequest.toStruct());
     }
 }

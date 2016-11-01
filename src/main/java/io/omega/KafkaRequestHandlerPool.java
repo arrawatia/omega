@@ -1,14 +1,18 @@
 package io.omega;
 
 import org.apache.kafka.common.utils.Utils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class KafkaRequestHandlerPool {
+    private static final Logger log = LoggerFactory.getLogger(KafkaRequestHandlerPool.class);
+
     private final KafkaRequestHandler[] runnables;
     private final Thread[] threads;
-    int brokerId;
-    RequestChannel requestChannel;
-    KafkaApis apis;
-    int numThreads;
+    private final int brokerId;
+    private final RequestChannel requestChannel;
+    private final KafkaApis apis;
+    private final int numThreads;
 
     public KafkaRequestHandlerPool(int brokerId, RequestChannel requestChannel, KafkaApis apis, int numThreads) {
         this.brokerId = brokerId;
@@ -32,16 +36,16 @@ public class KafkaRequestHandlerPool {
     }
 
     public void shutdown() {
-//            info("shutting down")
+        log.info("shutting down");
         for (KafkaRequestHandler handler : runnables)
             handler.shutdown();
         for (Thread thread : threads)
             try {
                 thread.join();
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                log.error("", e);
             }
-//            info("shut down completely");
+        log.info("shut down completely");
     }
 }
 

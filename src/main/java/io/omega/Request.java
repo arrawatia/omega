@@ -7,73 +7,56 @@ import org.apache.kafka.common.protocol.SecurityProtocol;
 import org.apache.kafka.common.requests.AbstractRequest;
 import org.apache.kafka.common.requests.ApiVersionsRequest;
 import org.apache.kafka.common.requests.RequestHeader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 
 public class Request {
+
+    private static final Logger log = LoggerFactory.getLogger(Request.class);
+
     private final short requestId;
     private final Integer processor;
-    private final ByteBuffer buffer;
     private final SecurityProtocol securityProtocol;
     private final RequestHeader header;
     private final String connectionId;
-
-    public RequestHeader header() {
-        return header;
-    }
-
-    public AbstractRequest body() {
-        return body;
-    }
-
     private final AbstractRequest body;
-
-    public short requestId() {
-        return requestId;
-    }
-
-
-    public SecurityProtocol securityProtocol() {
-        return securityProtocol;
-    }
-
-    public String connectionId(){
-        return connectionId;
-    }
+    private final ByteBuffer buffer;
     volatile Long requestDequeueTimeMs = -1L;
     volatile Long apiLocalCompleteTimeMs = -1L;
     volatile Long responseCompleteTimeMs = -1L;
     volatile Long responseDequeueTimeMs = -1L;
     volatile Long apiRemoteCompleteTimeMs = -1L;
 
-    public Request(Integer processor, String connectionId, Session session , ByteBuffer buffer, Long startTimeMs , SecurityProtocol securityProtocol) {
+    public Request(Integer processor, String connectionId, Session session, ByteBuffer buffer, Long startTimeMs, SecurityProtocol securityProtocol) {
         // These need to be volatile because the readers are in the network thread and the writers are in the request
         // handler threads or the purgatory threads
-
         this.requestId = buffer.getShort();
         this.buffer = buffer;
         this.securityProtocol = securityProtocol;
         this.processor = processor;
+        this.connectionId = connectionId;
+
+        // Read the buffer.
         buffer.rewind();
         this.header = RequestHeader.parse(buffer);
         this.body = parseBody(buffer);
-        this.connectionId = connectionId;
     }
 
     private AbstractRequest parseBody(ByteBuffer buffer) {
         try {
-                // For unsupported version of ApiVersionsRequest, create a dummy request to enable an error response to be returned later
-                if (header.apiKey() == ApiKeys.API_VERSIONS.id && !Protocol.apiVersionSupported(header.apiKey(), header.apiVersion()))
-                    return new ApiVersionsRequest();
-                else
-                    return AbstractRequest.getRequest(header.apiKey(), header.apiVersion(), buffer);
-            } catch (Throwable e) {
-                e.printStackTrace();
-            throw new RuntimeException("Error getting request for apiKey:" + header.apiKey() + " and apiVersion: "+ header.apiVersion(), e);
+            // For unsupported version of ApiVersionsRequest, create a dummy request to enable an error response to be returned later
+            if (header.apiKey() == ApiKeys.API_VERSIONS.id && !Protocol.apiVersionSupported(header.apiKey(), header.apiVersion()))
+                return new ApiVersionsRequest();
+            else
+                return AbstractRequest.getRequest(header.apiKey(), header.apiVersion(), buffer);
+        } catch (Throwable e) {
+            throw new RuntimeException("Error getting request for apiKey:" + header.apiKey() + " and apiVersion: " + header.apiVersion(), e);
         }
     }
 
-    public int processor(){
+    public int processor() {
         return this.processor;
     }
 //        // TODO: this will be removed once we migrated to client-side format
@@ -173,11 +156,33 @@ public class Request {
 //            }
 //
 //            if (requestLogger.isTraceEnabled)
-//                requestLogger.trace("Completed request:%s from connection %s;totalTime:%d,requestQueueTime:%d,localTime:%d,remoteTime:%d,responseQueueTime:%d,sendTime:%d,securityProtocol:%s,principal:%s"
+//                requestLogger.trace("Completed request:%s from connection %s;totalTime:%d,requestQueueTime:%d,localTime:%d,remoteTime:%d,responseQueueTime:%d,sendTime:%d,securityProtocol:%s,
+// principal:%s"
 //                        .format(requestDesc(true), connectionId, totalTime, requestQueueTime, apiLocalTime, apiRemoteTime, responseQueueTime, responseSendTime, securityProtocol, session.principal))
 //            else if (requestLogger.isDebugEnabled)
-//                requestLogger.debug("Completed request:%s from connection %s;totalTime:%d,requestQueueTime:%d,localTime:%d,remoteTime:%d,responseQueueTime:%d,sendTime:%d,securityProtocol:%s,principal:%s"
+//                requestLogger.debug("Completed request:%s from connection %s;totalTime:%d,requestQueueTime:%d,localTime:%d,remoteTime:%d,responseQueueTime:%d,sendTime:%d,securityProtocol:%s,
+// principal:%s"
 //                        .format(requestDesc(false), connectionId, totalTime, requestQueueTime, apiLocalTime, apiRemoteTime, responseQueueTime, responseSendTime, securityProtocol, session.principal))
 //        }
+
+    public short requestId() {
+        return requestId;
+    }
+
+    public SecurityProtocol securityProtocol() {
+        return securityProtocol;
+    }
+
+    public String connectionId() {
+        return connectionId;
+    }
+
+    public RequestHeader header() {
+        return header;
+    }
+
+    public AbstractRequest body() {
+        return body;
+    }
 
 }

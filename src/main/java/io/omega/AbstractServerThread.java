@@ -2,8 +2,10 @@ package io.omega;
 
 import org.apache.kafka.common.network.KafkaChannel;
 import org.apache.kafka.common.network.Selector;
+import org.apache.kafka.common.utils.Utils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.net.InetAddress;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.CountDownLatch;
@@ -11,15 +13,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public abstract class AbstractServerThread implements Runnable {
 
+    private static final Logger log = LoggerFactory.getLogger(AbstractServerThread.class);
+
     protected ConnectionQuotas connectionQuotas;
     private CountDownLatch startupLatch = new CountDownLatch(1);
     private CountDownLatch shutdownLatch = new CountDownLatch(1);
     private AtomicBoolean alive = new AtomicBoolean(true);
 
-
-    public void wakeup() {
-
-    }
+    public abstract void wakeup() ;
 
     /**
      * Initiates a graceful shutdown by signaling to stop and waiting for the shutdown to complete
@@ -30,7 +31,7 @@ public abstract class AbstractServerThread implements Runnable {
         try {
             shutdownLatch.await();
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            log.error("{}", e);
         }
     }
 
@@ -41,7 +42,7 @@ public abstract class AbstractServerThread implements Runnable {
         try {
             startupLatch.await();
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            log.error("{}", e);
         }
     }
 
@@ -72,7 +73,7 @@ public abstract class AbstractServerThread implements Runnable {
     public void close(Selector selector, String connectionId) {
         KafkaChannel channel = selector.channel(connectionId);
         if (channel != null) {
-//    debug(s"Closing selector connection $connectionId")
+        log.debug("Closing selector connection " + connectionId);
             InetAddress address = channel.socketAddress();
             if (address != null)
                 connectionQuotas.dec(address);
@@ -85,18 +86,10 @@ public abstract class AbstractServerThread implements Runnable {
      */
     public void close(SocketChannel channel) {
         if (channel != null) {
-//    debug("Closing connection from " + channel.socket.getRemoteSocketAddress())
+            log.debug("Closing connection from " + channel.socket().getRemoteSocketAddress());
             connectionQuotas.dec(channel.socket().getInetAddress());
-            try {
-                channel.socket().close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            try {
-                channel.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            Utils.closeQuietly(channel.socket(), "Error while closing socket for " + channel.socket().getRemoteSocketAddress());
+            Utils.closeQuietly(channel, "Error while closing channel ");
         }
     }
 }

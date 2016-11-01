@@ -7,16 +7,17 @@ import org.apache.kafka.common.requests.MetadataRequest;
 import org.apache.kafka.common.requests.MetadataResponse;
 import org.apache.kafka.common.requests.ResponseHeader;
 import org.apache.kafka.common.requests.ResponseSend;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import io.omega.client.KafkaProtocolClient;
 
-/**
- * Created by sumit on 10/26/16.
- */
 public class KafkaApis {
+    private static final Logger log = LoggerFactory.getLogger(ConnectionId.class);
+
     private final KafkaProtocolClient client;
 
     public KafkaApis(KafkaProtocolClient client) {

@@ -1,15 +1,19 @@
 package io.omega;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class KafkaRequestHandler implements Runnable {
 
-    int id;
-    int brokerId;
+    private static final Logger log = LoggerFactory.getLogger(KafkaRequestHandler.class);
 
+    private final int id;
+    private final int brokerId;
 
     //    Meter aggregateIdleMeter;
-    int totalHandlerThreads;
-    RequestChannel requestChannel;
-    KafkaApis apis;
+    private final int totalHandlerThreads;
+    private final RequestChannel requestChannel;
+    private final KafkaApis apis;
 
     public KafkaRequestHandler(int id, int brokerId, int totalHandlerThreads, RequestChannel requestChannel, KafkaApis apis) {
         this.id = id;
@@ -38,15 +42,14 @@ public class KafkaRequestHandler implements Runnable {
                 }
 
                 if (req.equals(RequestChannel.allDone())) {
-//                        debug("Kafka request handler %d on broker %d received shut down command".format(id, brokerId))
+                    log.debug("Kafka request handler {} on broker {} received shut down command", id, brokerId);
                     return;
                 }
 //                    req.requestDequeueTimeMs = SystemTime.milliseconds
-//                    trace("Kafka request handler %d on broker %d handling request %s".format(id, brokerId, req))
-                    apis.handle(req, requestChannel);
+                log.trace("Kafka request handler {} on broker %d handling request {}", id, brokerId, req);
+                apis.handle(req, requestChannel);
             } catch (Throwable e) {
-                e.printStackTrace();
-//                     error("Exception when handling request", e)
+                log.error("Exception when handling request", e);
             }
         }
     }

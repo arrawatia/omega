@@ -3,6 +3,8 @@ package io.omega;
 import org.apache.kafka.common.KafkaException;
 import org.apache.kafka.common.network.Selectable;
 import org.apache.kafka.common.utils.Utils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -17,6 +19,8 @@ import java.util.Set;
 
 public class Acceptor extends AbstractServerThread {
 
+    private static final Logger log = LoggerFactory.getLogger(Acceptor.class);
+
     private final Selector nioSelector;
     private final int recvBufferSize;
     private final int sendBufferSize;
@@ -27,7 +31,7 @@ public class Acceptor extends AbstractServerThread {
 
         this.nioSelector = Selector.open();
         this.sendBufferSize = sendBufferSize;
-        System.out.println("Acceptor : recvBufferSize=" + recvBufferSize);
+        log.debug("Acceptor : recvBufferSize = {}", recvBufferSize);
         this.recvBufferSize = recvBufferSize;
         this.processors = processors;
         this.connectionQuotas = connectionQuotas;
@@ -65,34 +69,23 @@ public class Acceptor extends AbstractServerThread {
                                 // round robin to the next processor thread
                                 currentProcessor = (currentProcessor + 1) % processors.length;
                             } catch (Exception e) {
-                                e.printStackTrace();
-//                                    error("Error while accepting connection", e);
+                                log.error("Error while accepting connection {}", e);
                             }
                         }
                     }
                 } catch (Throwable e) {
-                    e.printStackTrace();
                     // We catch all the throwables to prevent the acceptor thread from exiting on exceptions due
                     // to a select operation on a specific channel or a bad request. We don't want
                     // the broker to stop responding to requests from other clients in these scenarios.
-
-//                    error("Error occurred", e);
+                    log.error("Error occurred {}", e);
                 }
             }
         } catch (ClosedChannelException e) {
-            e.printStackTrace();
+            log.error("Error occurred {}", e);
         } finally {
-//            debug("Closing server socket and selector.");
-            try {
-                serverChannel.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            try {
-                nioSelector.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            log.debug("Closing server socket and selector.");
+            Utils.closeQuietly(serverChannel, "Error while closing channel " + serverChannel);
+            Utils.closeQuietly(nioSelector, "Error while closing selector " + nioSelector);
             shutdownComplete();
         }
     }
@@ -110,9 +103,8 @@ public class Acceptor extends AbstractServerThread {
 
         try {
             serverChannel.socket().bind(socketAddress);
-//    info("Awaiting socket connections on %s:%d.".format(socketAddress.getHostString, serverChannel.socket.getLocalPort))
+            log.info("Awaiting socket connections on {}:{}.".format(socketAddress.getHostString(), serverChannel.socket().getLocalPort()));
         } catch (SocketException e) {
-            e.printStackTrace();
             throw new KafkaException("Socket server failed to bind to %s:%d: %s.".format(socketAddress.getHostString(), port, e.getMessage()), e);
         }
         return serverChannel;
@@ -121,7 +113,7 @@ public class Acceptor extends AbstractServerThread {
     /*
      * Accept a new connection
      */
-    public void accept(SelectionKey key, Processor processor) {
+    public void accept(SelectionKey key, Processor processor) throws IOException {
         SocketChannel socketChannel = null;
         try {
             ServerSocketChannel serverSocketChannel = (ServerSocketChannel) key.channel();
@@ -133,15 +125,18 @@ public class Acceptor extends AbstractServerThread {
             if (sendBufferSize != Selectable.USE_DEFAULT_BUFFER_SIZE)
                 socketChannel.socket().setSendBufferSize(sendBufferSize);
 
-//            debug("Accepted connection from %s on %s and assigned it to processor %d, sendBufferSize [actual|requested]: [%d|%d] recvBufferSize [actual|requested]: [%d|%d]"
-//                    .format(socketChannel.socket.getRemoteSocketAddress, socketChannel.socket.getLocalSocketAddress, processor.id,
-//                            socketChannel.socket.getSendBufferSize, sendBufferSize,
-//                            socketChannel.socket.getReceiveBufferSize, recvBufferSize))
+            log.debug("Accepted connection from {} on {} and assigned it to processor {}, sendBufferSize [actual|requested]: [{}|{}] recvBufferSize [actual|requested]: [{}|{}]",
+                            socketChannel.socket().getRemoteSocketAddress(),
+                            socketChannel.socket().getLocalSocketAddress(),
+                            processor.id(),
+                            socketChannel.socket().getSendBufferSize(),
+                            sendBufferSize,
+                            socketChannel.socket().getReceiveBufferSize(),
+                            recvBufferSize);
 
             processor.accept(socketChannel);
-        } catch (Exception e) {
-            e.printStackTrace();
-//                info("Rejected connection from %s, address already has the configured maximum of %d connections.".format(e.ip, e.count))
+        } catch (TooManyConnectionsException e) {
+            log.info("Rejected connection from {}, address already has the configured maximum of {} connections.", e.ip(), e.count());
             close(socketChannel);
         }
     }

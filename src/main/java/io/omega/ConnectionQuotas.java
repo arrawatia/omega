@@ -1,5 +1,8 @@
 package io.omega;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.HashMap;
@@ -7,6 +10,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 public class ConnectionQuotas {
+
+    private static final Logger log = LoggerFactory.getLogger(ConnectionQuotas.class);
 
     private final int defaultMax;
     private final Map<String, Integer> overrideQuotas;
@@ -28,7 +33,7 @@ public class ConnectionQuotas {
                 ));
     }
 
-    private Map<InetAddress, Integer> counts = new HashMap<InetAddress, Integer>();
+    private Map<InetAddress, Integer> counts = new HashMap<>();
 
     public void inc(InetAddress address) {
         synchronized (counts) {
