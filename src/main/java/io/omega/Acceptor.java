@@ -65,11 +65,13 @@ public class Acceptor extends AbstractServerThread {
                                 // round robin to the next processor thread
                                 currentProcessor = (currentProcessor + 1) % processors.length;
                             } catch (Exception e) {
+                                e.printStackTrace();
 //                                    error("Error while accepting connection", e);
                             }
                         }
                     }
                 } catch (Throwable e) {
+                    e.printStackTrace();
                     // We catch all the throwables to prevent the acceptor thread from exiting on exceptions due
                     // to a select operation on a specific channel or a bad request. We don't want
                     // the broker to stop responding to requests from other clients in these scenarios.
@@ -110,6 +112,7 @@ public class Acceptor extends AbstractServerThread {
             serverChannel.socket().bind(socketAddress);
 //    info("Awaiting socket connections on %s:%d.".format(socketAddress.getHostString, serverChannel.socket.getLocalPort))
         } catch (SocketException e) {
+            e.printStackTrace();
             throw new KafkaException("Socket server failed to bind to %s:%d: %s.".format(socketAddress.getHostString(), port, e.getMessage()), e);
         }
         return serverChannel;
@@ -137,6 +140,7 @@ public class Acceptor extends AbstractServerThread {
 
             processor.accept(socketChannel);
         } catch (Exception e) {
+            e.printStackTrace();
 //                info("Rejected connection from %s, address already has the configured maximum of %d connections.".format(e.ip, e.count))
             close(socketChannel);
         }

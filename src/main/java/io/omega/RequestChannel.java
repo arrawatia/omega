@@ -95,6 +95,7 @@ public class RequestChannel {
         try {
             return requestQueue.poll(timeout, TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {
+            e.printStackTrace();
             return null;
         }
     }
@@ -104,6 +105,7 @@ public class RequestChannel {
         try {
             return requestQueue.take();
         } catch (InterruptedException e) {
+            e.printStackTrace();
             return null;
         }
     }

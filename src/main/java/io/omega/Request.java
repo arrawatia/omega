@@ -68,6 +68,7 @@ public class Request {
                 else
                     return AbstractRequest.getRequest(header.apiKey(), header.apiVersion(), buffer);
             } catch (Throwable e) {
+                e.printStackTrace();
             throw new RuntimeException("Error getting request for apiKey:" + header.apiKey() + " and apiVersion: "+ header.apiVersion(), e);
         }
     }

@@ -83,10 +83,13 @@ public class SocketServer {
 //        }
     }
 
-    private Map<SecurityProtocol, EndPoint> getListeners(List<String> list) {
+    private Map<SecurityProtocol, EndPoint> getListeners(List<String> endpointStrings) {
 //        list.stream().map(listener -> EndPoint.createEndPoint(listener)).map(ep -> ep.protocolType -> ep).toMap
         Map<SecurityProtocol, EndPoint> tmp = new HashMap<>();
-        tmp.put(SecurityProtocol.PLAINTEXT, new EndPoint("localhost", 9088, SecurityProtocol.PLAINTEXT));
+        for(String endpointString: endpointStrings) {
+            EndPoint e = EndPoint.createEndPoint(endpointString);
+            tmp.put(e.protocolType(), e);
+        }
         return tmp;
     }
 

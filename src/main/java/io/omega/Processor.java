@@ -95,10 +95,11 @@ public class Processor extends AbstractServerThread {
                 // or request. This behavior might need to be reviewed if we see an exception that need the entire broker to stop.
 //                error("Processor got uncaught exception.", e)
 //                debug("Closing selector - processor " + id)
-                closeAll();
-                shutdownComplete();
+                e.printStackTrace();
             }
         }
+        closeAll();
+        shutdownComplete();
     }
 
     private void processNewResponses() {
@@ -157,6 +158,7 @@ public class Processor extends AbstractServerThread {
         try {
             selector.poll(300);
         } catch (IllegalStateException | IOException e) {
+//            e.printStackTrace();
 //                error(s"Closing processor $id due to illegal state or IO exception")
             closeAll();
             shutdownComplete();
@@ -176,6 +178,7 @@ public class Processor extends AbstractServerThread {
                         requestChannel.sendRequest(req);
                         selector.mute(receive.source());
                     } catch (Exception e) {
+                        e.printStackTrace();
                         // note that even though we got an exception, we can assume that receive
                         // .source is valid. Issues with constructing a valid receive object were
                         // handled earlier
@@ -243,6 +246,7 @@ public class Processor extends AbstractServerThread {
                 String connectionId = new ConnectionId(localHost, localPort, remoteHost, remotePort).toString();
                 selector.register(connectionId, channel);
             } catch (Throwable t) {
+                t.printStackTrace();
                 // We explicitly catch all non fatal exceptions and close the socket to avoid a
                 // socket leak. The other
                 // throwables will be caught in processor and logged as uncaught exceptions.

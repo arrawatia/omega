@@ -45,6 +45,7 @@ public class KafkaRequestHandler implements Runnable {
 //                    trace("Kafka request handler %d on broker %d handling request %s".format(id, brokerId, req))
                     apis.handle(req, requestChannel);
             } catch (Throwable e) {
+                e.printStackTrace();
 //                     error("Exception when handling request", e)
             }
         }

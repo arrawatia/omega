@@ -20,7 +20,10 @@ public class KafkaServer {
 
     public static void main(String[] args) throws IOException, InterruptedException {
 
-        ProxyServerConfig config = new ProxyServerConfig(new HashMap<>());
+        Map<String, String> proxycfg = new HashMap<>();
+        proxycfg.put(ProxyServerConfig.ListenersProp, "PLAINTEXT://0.0.0.0:9088");
+
+        ProxyServerConfig config = new ProxyServerConfig(proxycfg);
         System.out.println(config.values());
         System.out.println(config.getInt(ProxyServerConfig.SocketReceiveBufferBytesProp));
     KafkaApis apis;

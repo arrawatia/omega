@@ -101,7 +101,7 @@ public class ProxyServerConfig extends AbstractConfig {
                 ConfigDef.Range.atLeast(1), ConfigDef.Importance.HIGH, QueuedMaxRequestsDoc)
             .define(RequestTimeoutMsProp, ConfigDef.Type.INT, RequestTimeoutMs,
                 ConfigDef.Importance.HIGH, RequestTimeoutMsDoc)
-            .define(ListenersProp, ConfigDef.Type.LIST, null, ConfigDef.Importance.HIGH,
+            .define(ListenersProp, ConfigDef.Type.LIST, ConfigDef.Importance.HIGH,
                 ListenersDoc)
             .define(AdvertisedListenersProp, ConfigDef.Type.STRING, null, ConfigDef.Importance.HIGH,
                 AdvertisedListenersDoc)

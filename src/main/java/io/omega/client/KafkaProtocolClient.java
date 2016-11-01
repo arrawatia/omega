@@ -6,7 +6,6 @@ import org.apache.kafka.clients.ClientUtils;
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.Metadata;
 import org.apache.kafka.clients.NetworkClient;
-import org.apache.kafka.clients.consumer.internals.ConsumerNetworkClient;
 import org.apache.kafka.clients.consumer.internals.RequestFuture;
 import org.apache.kafka.common.Cluster;
 import org.apache.kafka.common.Node;
@@ -110,6 +109,18 @@ public class KafkaProtocolClient {
         return null;
     }
 
+    public Struct sendAnyNode(ApiKeys api, short version, AbstractRequest request,  int timeOutInMs) {
+        for (Node broker : this.bootStrapBrokers) {
+            try {
+                return sendSync(broker, api, version , request, timeOutInMs);
+            } catch (Exception e) {
+//                log.error("Request {} failed against node {}.", api, broker, e);
+            }
+        }
+        log.error("Request {} failed on all bootstrap brokers {}.", api, this.bootStrapBrokers);
+        return null;
+    }
+
     public RequestFuture<ClientResponse> send(Node target, ApiKeys api, AbstractRequest request){
        return client.send(target, api, request);
     }
@@ -121,6 +132,17 @@ public class KafkaProtocolClient {
 
     public Struct sendSync(Node target, ApiKeys api, AbstractRequest request, int timeOutInMs) {
         RequestFuture<ClientResponse> future = client.send(target, api, request);
+        client.poll(future, timeOutInMs);
+
+        if (future.succeeded()) {
+            return future.value().responseBody();
+        } else {
+            throw future.exception();
+        }
+    }
+
+    public Struct sendSync(Node target, ApiKeys api, short apiVersion, AbstractRequest request, int timeOutInMs) {
+        RequestFuture<ClientResponse> future = client.send(target, api, apiVersion, request);
         client.poll(future, timeOutInMs);
 
         if (future.succeeded()) {
@@ -167,6 +189,4 @@ public class KafkaProtocolClient {
         }
 
     }
-
 }
-

@@ -1,21 +1,32 @@
 package io.omega;
 
-/**
- * Created by sumit on 10/24/16.
- */
+import org.apache.kafka.common.utils.Utils;
+
 public class ConnectionId {
 
+    private final String localHost;
+    private final int localPort;
+    private final String remoteHost;
+    private final int remotePort;
+
+    public ConnectionId(String localHost, int localPort, String remoteHost, int remotePort) {
+        this.localHost = localHost;
+        this.localPort = localPort;
+        this.remoteHost = remoteHost;
+        this.remotePort = remotePort;
+    }
 
     public static ConnectionId fromString(String s) {
-        String[] tmp = s.split("-");
+        String[] hostPorts = s.split("-");
+        System.out.println("ConnectionId > fromString " + s);
 
-        //case Array(local, remote) =>
-
-//            BrokerEndPoint.parseHostPort(local).flatMap { case (localHost, localPort) =>
-//                BrokerEndPoint.parseHostPort(remote).map { case (remoteHost, remotePort) =>
-//                ConnectionId(localHost, localPort, remoteHost, remotePort)
-        return null;
-
+        String localHostPort = hostPorts[0];
+        String localHost = Utils.getHost(localHostPort);
+        int localPort = Utils.getPort(localHostPort);
+        String remoteHostPort = hostPorts[1];
+        String remoteHost = Utils.getHost(remoteHostPort);
+        int remotePort = Utils.getPort(remoteHostPort);
+        return new ConnectionId(localHost, localPort, remoteHost, remotePort);
     }
 
     public String localHost() {
@@ -34,21 +45,8 @@ public class ConnectionId {
         return remotePort;
     }
 
-    String localHost;
-    int localPort;
-    String remoteHost;
-    int remotePort;
-
-    public ConnectionId(String localHost, int localPort, String remoteHost, int remotePort) {
-        this.localHost = localHost;
-        this.localPort = localPort;
-        this.remoteHost = remoteHost;
-        this.remotePort = remotePort;
-    }
-
-
     @Override
     public String toString() {
-        return this.localHost + this.localPort + "-" + this.remoteHost + this.remotePort;
+        return this.localHost + ":" + this.localPort + "-" + this.remoteHost + ":" + this.remotePort;
     }
 }

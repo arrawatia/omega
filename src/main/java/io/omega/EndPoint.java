@@ -1,14 +1,24 @@
 package io.omega;
 
 import org.apache.kafka.common.protocol.SecurityProtocol;
+import org.apache.kafka.common.utils.Utils;
 
-import java.nio.ByteBuffer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 
 public class EndPoint {
 
-
+    private static final Pattern PROTOCOL_HOST_PORT_PATTERN = Pattern.compile("^(.*)://\\[?([0-9a-zA-Z\\-%._:]*)\\]?:([0-9]+)");
     private final String host;
     private final int port;
+    private final SecurityProtocol protocolType;
+
+    public EndPoint(String host, int port, SecurityProtocol protocolType) {
+        this.host= host;
+        this.port=port;
+        this.protocolType=protocolType;
+    }
 
     public String host() {
         return host;
@@ -22,27 +32,6 @@ public class EndPoint {
         return protocolType;
     }
 
-    private final SecurityProtocol protocolType;
-
-    public EndPoint(String host, int port, SecurityProtocol protocolType) {
-        this.host= host;
-        this.port=port;
-        this.protocolType=protocolType;
-
-    }
-//    private String uriParseExp = "^(.*)://\[?([0-9a-zA-Z\-%._:]*)\]?:(-?[0-9]+)";
-
-    public EndPoint readFrom(ByteBuffer buffer) {
-
-
-//        val port = buffer.getInt()
-//        val host = readShortString(buffer)
-//        val protocol = buffer.getShort()
-//        EndPoint(host, port, SecurityProtocol.forId(protocol))
-
-        return null;
-    }
-
     /**
      * Create EndPoint object from connectionString
      *
@@ -51,43 +40,34 @@ public class EndPoint {
      *                         Host can be empty (PLAINTEXT://:9092) in which case we'll bind to default interface
      *                         Negative ports are also accepted, since they are used in some unit tests
      */
-    public EndPoint createEndPoint(String connectionString) {
-
-
-//        connectionString match {
-//        case uriParseExp(protocol, "", port) =>new EndPoint(null, port.toInt, SecurityProtocol.forName(protocol))
-//        case uriParseExp(protocol, host, port) =>new EndPoint(host, port.toInt, SecurityProtocol.forName(protocol))
-//        case _ =>throw new KafkaException("Unable to parse " + connectionString + " to a broker endpoint")
-        return null;
+    public static EndPoint createEndPoint(String connectionString) {
+        System.out.println(connectionString);
+        Matcher matcher = PROTOCOL_HOST_PORT_PATTERN.matcher(connectionString);
+        if (matcher.matches()) {
+            System.out.println(matcher.group(0));
+            System.out.println(matcher.group(1));
+            System.out.println(matcher.group(2));
+            System.out.println(matcher.group(3));
+            SecurityProtocol sp = SecurityProtocol.forName(matcher.group(1));
+            String host = matcher.group(2);
+            int port = Integer.parseInt(matcher.group(3));
+            return new EndPoint(host, port, sp);
+        } else {
+            return null;
+        }
     }
-
 
     /**
      * Part of the broker definition - matching host/port pair to a protocol
      */
 
-
     public String connectionString() {
-//            val hostport =
-//        if (host == null)
-//            ":" + port
-//        else
-//            Utils.formatAddress(host, port)
-//        protocolType + "://" + hostport
-        return null;
+        String hostPort;
+        if (host == null) {
+            hostPort = ":" + port;
+        } else {
+            hostPort = Utils.formatAddress(host, port);
+        }
+        return protocolType + "://" + hostPort;
     }
-
-    public void writeTo(ByteBuffer buffer) {
-//            buffer.putInt(port)
-//            writeShortString(buffer, host)
-//            buffer.putShort(protocolType.id)
-    }
-
-    public int sizeInBytes() {
-//            4 + /* port */
-//                    shortStringLength(host) +
-//                    2 /* protocol id */
-        return -1;
-    }
-
 }

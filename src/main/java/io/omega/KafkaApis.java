@@ -1,5 +1,6 @@
 package io.omega;
 
+import org.apache.kafka.common.Node;
 import org.apache.kafka.common.protocol.ApiKeys;
 import org.apache.kafka.common.protocol.types.Struct;
 import org.apache.kafka.common.requests.MetadataRequest;
@@ -8,6 +9,7 @@ import org.apache.kafka.common.requests.ResponseHeader;
 import org.apache.kafka.common.requests.ResponseSend;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import io.omega.client.KafkaProtocolClient;
 
@@ -22,49 +24,45 @@ public class KafkaApis {
     }
 
     public void handle(Request req, RequestChannel requestChannel) {
-        try {
-
             System.out.println("-----connectionId-----" + req.connectionId());
             System.out.println("-----processor-----" + req.processor());
             System.out.println("-----securityProtocol-----" + req.securityProtocol());
-
             System.out.println("-----header-----" + req.header());
             System.out.println("-----header-----" + req.body());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
 
         if (req.header().apiKey() == 3) {
 
-//            val metadataRequest = request.body.asInstanceOf[MetadataRequest]
-//            val requestVersion = request.header.apiVersion()
-//
-//            val topics =
-//            // Handle old metadata request logic. Version 0 has no way to specify "no topics".
-//            if (requestVersion == 0) {
-//                if (metadataRequest.topics() == null || metadataRequest.topics().isEmpty)
-//                    metadataCache.getAllTopics()
-//                else
-//                    metadataRequest.topics.asScala.toSet
-//            } else {
-//                if (metadataRequest.isAllTopics)
-//                    metadataCache.getAllTopics()
-//                else
-//                    metadataRequest.topics.asScala.toSet
-//            }
             MetadataRequest request = (MetadataRequest)req.body();
             System.out.println("-----request-----" + request.toString());
 
             int timeOutInMs = 1000;
-            Struct responseBody = client.sendAnyNode(ApiKeys.METADATA, request, timeOutInMs);
+            Struct responseBody = client.sendAnyNode(ApiKeys.METADATA, req.header().apiVersion(), request, timeOutInMs);
             System.out.println("-----responseBody-----" + responseBody);
 
-
-            MetadataResponse response = new MetadataResponse(responseBody);
             ResponseHeader responseHeader = new ResponseHeader(req.header().correlationId());
+            MetadataResponse response = new MetadataResponse(responseBody);
+
+            List<Node> brokers = new ArrayList<>(response.brokers());
+            String clusterId = response.clusterId();
+            int controller = -1;
+            if(response.controller() != null){
+            controller = response.controller().id();
+
+            }
+            List<MetadataResponse.TopicMetadata> metadata = new ArrayList<>( response.topicMetadata());
+            int version = req.header().apiVersion();
+            System.out.println("-----brokers -----" + metadata);
 
 
-            requestChannel.sendResponse(new Response(req, new ResponseSend(req.connectionId(), responseHeader, responseBody)));
+            List<Node> proxyBrokers = new ArrayList<>();
+            for(Node b: brokers){
+                proxyBrokers.add(new Node(b.id(), b.host(), 9088, b.rack()));
+            }
+
+            MetadataResponse proxyResponse = new MetadataResponse(proxyBrokers, clusterId, controller, metadata, version);
+            System.out.println("-----proxy responseBody-----" + proxyResponse);
+
+            requestChannel.sendResponse(new Response(req, new ResponseSend(req.connectionId(), responseHeader, proxyResponse.toStruct())));
         }
 
     }
