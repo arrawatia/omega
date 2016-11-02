@@ -146,6 +146,7 @@ public class KafkaProtocolClient {
     }
 
     public Struct sendSync(Node target, ApiKeys api, AbstractRequest request, int timeOutInMs) {
+        log.debug("Sending request to node={} with type={} payload={}", target, api, request);
         RequestFuture<ClientResponse> future = client.send(target, api, request);
         client.poll(future, timeOutInMs);
 
@@ -157,6 +158,7 @@ public class KafkaProtocolClient {
     }
 
     public Struct sendSync(Node target, ApiKeys api, short apiVersion, AbstractRequest request, int timeOutInMs) {
+        log.debug("Sending request to node={} with type={} version={} payload={}", target, api, apiVersion, request);
         RequestFuture<ClientResponse> future = client.send(target, api, apiVersion, request);
         client.poll(future, timeOutInMs);
 
@@ -170,7 +172,8 @@ public class KafkaProtocolClient {
     public static class MetadataClientConfig extends AbstractConfig {
 
         private static final int defaultConnectionMaxIdleMs = 9 * 60 * 1000;
-        private static final int defaultRequestTimeoutMs = 5000;
+        // TODO : Figure out what a good value for this is. If this is too small (5 secs) a lot of requests time out with DisconnectionException
+        private static final int defaultRequestTimeoutMs = 5000000;
         private static final int defaultMaxInFlightRequestsPerConnection = 100;
         private static final int defaultReconnectBackoffMs = 50;
         private static final int defaultSendBufferBytes = 128 * 1024;

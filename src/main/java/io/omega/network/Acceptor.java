@@ -1,4 +1,4 @@
-package io.omega;
+package io.omega.network;
 
 import org.apache.kafka.common.KafkaException;
 import org.apache.kafka.common.network.Selectable;
@@ -16,6 +16,8 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.Iterator;
 import java.util.Set;
+
+import io.omega.server.EndPoint;
 
 public class Acceptor extends AbstractServerThread {
 
@@ -97,13 +99,12 @@ public class Acceptor extends AbstractServerThread {
         InetSocketAddress socketAddress = (host == null || host.trim().isEmpty()) ? new InetSocketAddress(port) : new InetSocketAddress(host, port);
         serverChannel = ServerSocketChannel.open();
         serverChannel.configureBlocking(false);
-        System.out.println(recvBufferSize);
         if (recvBufferSize != Selectable.USE_DEFAULT_BUFFER_SIZE)
             serverChannel.socket().setReceiveBufferSize(recvBufferSize);
 
         try {
             serverChannel.socket().bind(socketAddress);
-            log.info("Awaiting socket connections on {}:{}.".format(socketAddress.getHostString(), serverChannel.socket().getLocalPort()));
+            log.info("Awaiting socket connections on {}:{}.",socketAddress.getHostString(), serverChannel.socket().getLocalPort());
         } catch (SocketException e) {
             throw new KafkaException("Socket server failed to bind to %s:%d: %s.".format(socketAddress.getHostString(), port, e.getMessage()), e);
         }

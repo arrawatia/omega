@@ -1,4 +1,4 @@
-package io.omega;
+package io.omega.server;
 
 import org.apache.kafka.common.protocol.ApiKeys;
 import org.apache.kafka.common.protocol.SecurityProtocol;
@@ -19,6 +19,9 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+
+import io.omega.network.ResponseListener;
+import io.omega.network.Session;
 
 
 public class RequestChannel {

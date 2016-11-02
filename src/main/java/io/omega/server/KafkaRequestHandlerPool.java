@@ -1,8 +1,10 @@
-package io.omega;
+package io.omega.server;
 
 import org.apache.kafka.common.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import io.omega.KafkaApiHandler;
 
 public class KafkaRequestHandlerPool {
     private static final Logger log = LoggerFactory.getLogger(KafkaRequestHandlerPool.class);
@@ -11,10 +13,10 @@ public class KafkaRequestHandlerPool {
     private final Thread[] threads;
     private final int brokerId;
     private final RequestChannel requestChannel;
-    private final KafkaApis apis;
+    private final KafkaApiHandler apis;
     private final int numThreads;
 
-    public KafkaRequestHandlerPool(int brokerId, RequestChannel requestChannel, KafkaApis apis, int numThreads) {
+    public KafkaRequestHandlerPool(int brokerId, RequestChannel requestChannel, KafkaApiHandler apis, int numThreads) {
         this.brokerId = brokerId;
         this.requestChannel = requestChannel;
         this.apis = apis;

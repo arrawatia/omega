@@ -1,7 +1,9 @@
-package io.omega;
+package io.omega.server;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import io.omega.KafkaApiHandler;
 
 public class KafkaRequestHandler implements Runnable {
 
@@ -13,9 +15,9 @@ public class KafkaRequestHandler implements Runnable {
     //    Meter aggregateIdleMeter;
     private final int totalHandlerThreads;
     private final RequestChannel requestChannel;
-    private final KafkaApis apis;
+    private final KafkaApiHandler apis;
 
-    public KafkaRequestHandler(int id, int brokerId, int totalHandlerThreads, RequestChannel requestChannel, KafkaApis apis) {
+    public KafkaRequestHandler(int id, int brokerId, int totalHandlerThreads, RequestChannel requestChannel, KafkaApiHandler apis) {
         this.id = id;
         this.brokerId = brokerId;
         this.totalHandlerThreads = totalHandlerThreads;

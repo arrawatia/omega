@@ -1,4 +1,4 @@
-package io.omega;
+package io.omega.network;
 
 import java.net.InetAddress;
 

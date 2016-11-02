@@ -1,4 +1,4 @@
-package io.omega;
+package io.omega.server;
 
 import org.apache.kafka.common.network.Send;
 
@@ -10,7 +10,6 @@ public class Response {
     private final ResponseAction responseAction;
     private final Integer processor;
     private final Send responseSend;
-
 
     public ResponseAction responseAction() {
         return this.responseAction;

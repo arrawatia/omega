@@ -1,4 +1,4 @@
-package io.omega;
+package io.omega.server;
 
 import org.apache.kafka.common.protocol.SecurityProtocol;
 import org.apache.kafka.common.utils.Utils;
@@ -41,13 +41,8 @@ public class EndPoint {
      *                         Negative ports are also accepted, since they are used in some unit tests
      */
     public static EndPoint createEndPoint(String connectionString) {
-        System.out.println(connectionString);
         Matcher matcher = PROTOCOL_HOST_PORT_PATTERN.matcher(connectionString);
         if (matcher.matches()) {
-//            System.out.println(matcher.group(0));
-//            System.out.println(matcher.group(1));
-//            System.out.println(matcher.group(2));
-//            System.out.println(matcher.group(3));
             SecurityProtocol sp = SecurityProtocol.forName(matcher.group(1));
             String host = matcher.group(2);
             int port = Integer.parseInt(matcher.group(3));

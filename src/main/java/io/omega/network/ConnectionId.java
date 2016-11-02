@@ -1,4 +1,4 @@
-package io.omega;
+package io.omega.network;
 
 import org.apache.kafka.common.utils.Utils;
 import org.slf4j.Logger;

@@ -1,4 +1,4 @@
-package io.omega;
+package io.omega.network;
 
 import org.apache.kafka.common.metrics.Metrics;
 import org.apache.kafka.common.protocol.SecurityProtocol;
@@ -14,6 +14,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import io.omega.server.EndPoint;
+import io.omega.ProxyServerConfig;
+import io.omega.server.RequestChannel;
 
 
 public class SocketServer {

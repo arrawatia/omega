@@ -1,4 +1,4 @@
-package io.omega;
+package io.omega.server;
 
 
 import org.apache.kafka.common.protocol.ApiKeys;
@@ -11,6 +11,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
+
+import io.omega.network.Session;
 
 public class Request {
 
@@ -185,4 +187,15 @@ public class Request {
         return body;
     }
 
+    @Override
+    public String toString() {
+        return "Request{" +
+                "\nrequestId=" + requestId +
+                ", \nprocessor=" + processor +
+                ", \nsecurityProtocol=" + securityProtocol +
+                ", \nconnectionId='" + connectionId + '\'' +
+                ", \nheader=" + header +
+                ", \nbody=" + body +
+                '}';
+    }
 }

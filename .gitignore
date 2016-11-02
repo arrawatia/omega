@@ -1,9 +1,6 @@
-
 .idea
 *.scala
-
 *.iml
-
 *.scala
-
 target
+data

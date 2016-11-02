@@ -1,4 +1,4 @@
-package io.omega;
+package io.omega.network;
 
 import org.apache.kafka.common.metrics.Metrics;
 import org.apache.kafka.common.network.ChannelBuilders;
@@ -20,6 +20,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+
+import io.omega.server.Request;
+import io.omega.server.RequestChannel;
+import io.omega.server.Response;
 
 public class Processor extends AbstractServerThread {
     private static final Logger log = LoggerFactory.getLogger(Processor.class);

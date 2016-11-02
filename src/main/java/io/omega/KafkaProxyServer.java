@@ -11,8 +11,11 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import io.omega.client.KafkaProtocolClient;
+import io.omega.network.SocketServer;
+import io.omega.proxy.KafkaApis;
+import io.omega.server.KafkaRequestHandlerPool;
 
-public class KafkaServer {
+public class KafkaProxyServer {
 
     public static void main(String[] args) throws IOException, InterruptedException {
 
@@ -20,24 +23,21 @@ public class KafkaServer {
         proxycfg.put(ProxyServerConfig.ListenersProp, "PLAINTEXT://0.0.0.0:9088");
 
         ProxyServerConfig config = new ProxyServerConfig(proxycfg);
-        System.out.println(config.values());
-        System.out.println(config.getInt(ProxyServerConfig.SocketReceiveBufferBytesProp));
-        KafkaApis apis;
+        KafkaApiHandler apis;
         SocketServer socketServer;
         KafkaRequestHandlerPool requestHandlerPool;
 
         Map<String, String> cfg = new HashMap<>();
-        cfg.put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
-        KafkaProtocolClient client = new KafkaProtocolClient(cfg);
-
+        cfg.put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, "localhost:9095");
+//        KafkaProtocolClient client = new KafkaProtocolClient(cfg);
 
         AtomicInteger correlationId = new AtomicInteger(0);
         socketServer = new SocketServer(config, new Metrics(), new SystemTime());
         socketServer.startup();
 
 
-     /* start processing requests */
-        apis = new KafkaApis(client);
+        /* start processing requests */
+        apis = new KafkaApis(cfg);
 
         requestHandlerPool = new KafkaRequestHandlerPool(-1, socketServer.requestChannel(), apis, config.getInt(ProxyServerConfig.NumIoThreadsProp));
 
