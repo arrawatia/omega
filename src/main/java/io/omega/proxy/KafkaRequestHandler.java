@@ -1,9 +1,11 @@
-package io.omega.server;
+package io.omega.proxy;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.omega.KafkaApiHandler;
+import io.omega.server.Request;
+import io.omega.server.RequestChannel;
+
 
 public class KafkaRequestHandler implements Runnable {
 
@@ -15,17 +17,16 @@ public class KafkaRequestHandler implements Runnable {
     //    Meter aggregateIdleMeter;
     private final int totalHandlerThreads;
     private final RequestChannel requestChannel;
-    private final KafkaApiHandler apis;
+    private final KafkaRequestDispatcher dispatcher;
 
-    public KafkaRequestHandler(int id, int brokerId, int totalHandlerThreads, RequestChannel requestChannel, KafkaApiHandler apis) {
+    public KafkaRequestHandler(int id, int brokerId, int totalHandlerThreads, RequestChannel requestChannel, KafkaRequestDispatcher dispatcher) {
         this.id = id;
         this.brokerId = brokerId;
         this.totalHandlerThreads = totalHandlerThreads;
         this.requestChannel = requestChannel;
-        this.apis = apis;
+        this.dispatcher = dispatcher;
     }
 
-    //    apis: KafkaApis)   {
 //        this.logIdent = "[Kafka Request Handler " + id + " on Broker " + brokerId + "], "
 
     public void run() {
@@ -49,7 +50,7 @@ public class KafkaRequestHandler implements Runnable {
                 }
 //                    req.requestDequeueTimeMs = SystemTime.milliseconds
                 log.trace("Kafka request handler {} on broker %d handling request {}", id, brokerId, req);
-                apis.handle(req, requestChannel);
+                dispatcher.dispatch(req, requestChannel);
             } catch (Throwable e) {
                 log.error("Exception when handling request", e);
             }

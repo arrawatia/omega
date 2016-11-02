@@ -1,10 +1,12 @@
-package io.omega.server;
+package io.omega.proxy;
 
 import org.apache.kafka.common.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.omega.KafkaApiHandler;
+import java.util.Map;
+
+import io.omega.server.RequestChannel;
 
 public class KafkaRequestHandlerPool {
     private static final Logger log = LoggerFactory.getLogger(KafkaRequestHandlerPool.class);
@@ -13,25 +15,26 @@ public class KafkaRequestHandlerPool {
     private final Thread[] threads;
     private final int brokerId;
     private final RequestChannel requestChannel;
-    private final KafkaApiHandler apis;
     private final int numThreads;
+    private final Map<String, String> cfg;
 
-    public KafkaRequestHandlerPool(int brokerId, RequestChannel requestChannel, KafkaApiHandler apis, int numThreads) {
+    public KafkaRequestHandlerPool(int brokerId, RequestChannel requestChannel, Map<String, String> cfg, int numThreads) {
         this.brokerId = brokerId;
         this.requestChannel = requestChannel;
-        this.apis = apis;
+        this.cfg = cfg;
         this.numThreads = numThreads;
+        this.threads = new Thread[numThreads];
+        this.runnables = new KafkaRequestHandler[numThreads];
 
     /* a meter to track the average free capacity of the request handlers */
 //        private val aggregateIdleMeter = newMeter("RequestHandlerAvgIdlePercent", "percent", TimeUnit.NANOSECONDS)
 
 //        this.logIdent = "[Kafka Request Handler on Broker " + brokerId + "], "
-        threads = new Thread[numThreads];
-        runnables = new KafkaRequestHandler[numThreads];
+    }
+    public void startup(){
         for (int i = 0; i < numThreads; i++) {
-
-//            runnables[i] = new KafkaRequestHandler(i, brokerId, aggregateIdleMeter, numThreads, requestChannel, apis);
-            runnables[i] = new KafkaRequestHandler(i, brokerId, numThreads, requestChannel, apis);
+//            runnables[i] = new KafkaRequestHandler(i, brokerId, aggregateIdleMeter, numThreads, requestChannel, factory);
+            runnables[i] = new KafkaRequestHandler(i, brokerId, numThreads, requestChannel, RequestDispatcherFactory.create(cfg));
             threads[i] = Utils.daemonThread("kafka-request-handler-" + i, runnables[i]);
             threads[i].start();
         }

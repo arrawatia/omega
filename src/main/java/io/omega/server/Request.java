@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
+import java.util.Objects;
 
 import io.omega.network.Session;
 
@@ -188,9 +189,29 @@ public class Request {
     }
 
     @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Request request = (Request) o;
+        return requestId == request.requestId &&
+                Objects.equals(processor, request.processor) &&
+                securityProtocol == request.securityProtocol &&
+                Objects.equals(header, request.header) &&
+                Objects.equals(connectionId, request.connectionId) &&
+                Objects.equals(body, request.body) &&
+                Objects.equals(buffer, request.buffer);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(requestId, processor, securityProtocol, header, connectionId, body, buffer);
+    }
+
+    @Override
     public String toString() {
         return "Request{" +
                 "\nrequestId=" + requestId +
+                ", \ntype=" + ApiKeys.forId(header.apiKey()) +
                 ", \nprocessor=" + processor +
                 ", \nsecurityProtocol=" + securityProtocol +
                 ", \nconnectionId='" + connectionId + '\'' +
