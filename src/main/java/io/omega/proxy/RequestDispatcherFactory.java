@@ -9,10 +9,12 @@ public class RequestDispatcherFactory {
 
     public static KafkaRequestDispatcher create(Map<String, String> cfg){
         KafkaRequestDispatcher dis = new KafkaApis(cfg);
-        MetadataCache mc = new MetadataCache();
+        MetadataCache mc = new MetadataCache(cfg);
         new MetadataHandler(dis, mc);
         new FetchHandler(dis, mc);
         new ProduceHandler(dis, mc);
+        new GroupCoordinatorHandler(dis, mc);
+        new ListOffsetsHandler(dis, mc);
         return dis;
     }
 }

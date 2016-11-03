@@ -28,33 +28,23 @@ public class KafkaApis implements KafkaRequestDispatcher {
     @Override
     public void dispatch(Request req, RequestChannel requestChannel) {
         try {
-            System.out.println("\n\n");
-            System.out.println("-----API_KEY-----" + ApiKeys.forId(req.header().apiKey()));
-            System.out.println("-----API_VERSION-----" + req.header().apiVersion());
-            System.out.println("-----connectionId-----" + req.connectionId());
-            System.out.println("-----processor-----" + req.processor());
-            System.out.println("-----securityProtocol-----" + req.securityProtocol());
-            System.out.println("-----header-----" + req.header());
-            System.out.println("-----body-----" + req.body());
-            System.out.println("\n\n");
+            log.trace("Dispatching request : \n\n{}\n\n", req);
             KafkaApiHandler handler = handlerTable[req.header().apiKey()];
-            handler.handle(req, requestChannel, this.client);
             if (handler == null) {
-                throw new RuntimeException("Invalid request id" + req.header().apiKey());
+                throw new RuntimeException("Invalid request. API key : " + req.header().apiKey());
             }
+            handler.handle(req, requestChannel, this.client);
         } catch (Throwable t) {
             AbstractRequestResponse response = req.body().getErrorResponse(req.header().apiVersion(), t);
             ResponseHeader respHeader = new ResponseHeader(req.header().correlationId());
 
-          /* If request doesn't have a default error response, we just close the connection.
-             For example, when produe request has acks set to 0 */
+            //If request doesn't have a default error response, we just close the connection. For example, when produce request has acks set to 0
             if (response == null)
                 requestChannel.closeConnection(req.processor(), req);
             else
                 requestChannel.sendResponse(new Response(req, new ResponseSend(req.connectionId(), respHeader, response)));
 
             log.error("Error when handling request {}", req.toString(), t);
-//            t.printStackTrace();
         }
     }
 

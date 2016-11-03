@@ -16,9 +16,6 @@ import io.omega.server.Request;
 import io.omega.server.RequestChannel;
 import io.omega.server.Response;
 
-/**
- * Created by sumit on 11/1/16.
- */
 public class MetadataHandler implements KafkaApiHandler {
     KafkaRequestDispatcher dispatcher ;
     MetadataCache metadataCache;
@@ -34,8 +31,8 @@ public class MetadataHandler implements KafkaApiHandler {
         if (req.header().apiKey() == 3) {
 
             MetadataRequest request = (MetadataRequest) req.body();
-            System.out.println("-----API_KEY-----" + ApiKeys.forId(req.header().apiKey()) +
-                    "-----request-----" + request.toString());
+//            System.out.println("-----API_KEY-----" + ApiKeys.forId(req.header().apiKey()) +
+//                    "-----request-----" + request.toString());
 
             int timeOutInMs = 1000;
             Struct responseBody = client.sendAnyNode(ApiKeys.METADATA, req.header().apiVersion(), request, timeOutInMs);
@@ -52,7 +49,7 @@ public class MetadataHandler implements KafkaApiHandler {
 
             }
             List<MetadataResponse.TopicMetadata> metadata = new ArrayList<>(response.topicMetadata());
-            metadataCache.update(metadata);
+            metadataCache.update(response);
             int version = req.header().apiVersion();
 //                System.out.println("-----brokers -----" + metadata);
 

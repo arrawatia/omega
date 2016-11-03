@@ -105,6 +105,8 @@ public class ConsumerNetworkClient implements Closeable {
         long now = time.milliseconds();
         RequestFutureCompletionHandler completionHandler = new RequestFutureCompletionHandler();
         RequestHeader header = client.nextRequestHeader(api, version);
+        log.debug("send node id = {}", node.idString());
+        log.debug("send request = {}", request.toStruct());
         RequestSend send = new RequestSend(node.idString(), header, request.toStruct());
         put(node, new ClientRequest(now, true, send, completionHandler));
 

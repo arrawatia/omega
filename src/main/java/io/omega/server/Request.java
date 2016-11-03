@@ -212,6 +212,7 @@ public class Request {
         return "Request{" +
                 "\nrequestId=" + requestId +
                 ", \ntype=" + ApiKeys.forId(header.apiKey()) +
+                ", \ntype=" + header.apiVersion() +
                 ", \nprocessor=" + processor +
                 ", \nsecurityProtocol=" + securityProtocol +
                 ", \nconnectionId='" + connectionId + '\'' +
