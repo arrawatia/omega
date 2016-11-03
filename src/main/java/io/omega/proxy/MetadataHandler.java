@@ -56,6 +56,7 @@ public class MetadataHandler implements KafkaApiHandler {
 
             List<Node> proxyBrokers = new ArrayList<>();
             for (Node b : brokers) {
+                // TODO : Replace hardcoded port and host with config.
                 proxyBrokers.add(new Node(b.id(), b.host(), 9088, b.rack()));
             }
 

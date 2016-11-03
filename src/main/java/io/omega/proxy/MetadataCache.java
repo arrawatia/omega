@@ -4,6 +4,8 @@ import org.apache.kafka.common.Node;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.protocol.ApiKeys;
 import org.apache.kafka.common.protocol.types.Struct;
+import org.apache.kafka.common.requests.GroupCoordinatorRequest;
+import org.apache.kafka.common.requests.GroupCoordinatorResponse;
 import org.apache.kafka.common.requests.MetadataRequest;
 import org.apache.kafka.common.requests.MetadataResponse;
 import org.slf4j.Logger;
@@ -20,6 +22,7 @@ public class MetadataCache {
     private static final Logger log = LoggerFactory.getLogger(MetadataCache.class);
 
     private HashMap<TopicPartition, Node> topicLeaderMetadataCache = new HashMap<>();
+    private HashMap<String, Node> groupIdToCoordinator = new HashMap<>();
     private Node controller;
     private String clusterId;
     private ArrayList<Node> brokers;
@@ -72,5 +75,24 @@ public class MetadataCache {
 
     public Node controller() {
         return this.controller;
+    }
+
+    public void updateCoordinatorForGroup(String groupId, Node coordinator){
+        groupIdToCoordinator.put(groupId, coordinator);
+    }
+    public Node coordinator(String groupId){
+        Node coordinator = groupIdToCoordinator.getOrDefault(groupId, null);
+        if(coordinator == null){
+            fetchCoordinator(groupId);
+            coordinator = groupIdToCoordinator.getOrDefault(groupId, null);
+        }
+        return coordinator;
+    }
+
+    private void fetchCoordinator(String groupId) {
+        GroupCoordinatorRequest request = new GroupCoordinatorRequest(groupId);
+        Struct responseBody = client.sendAnyNode(ApiKeys.GROUP_COORDINATOR, request, 1000000);
+        GroupCoordinatorResponse response = new GroupCoordinatorResponse(responseBody);
+        groupIdToCoordinator.put(groupId, response.node());
     }
 }

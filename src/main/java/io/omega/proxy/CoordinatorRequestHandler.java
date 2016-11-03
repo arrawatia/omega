@@ -15,29 +15,30 @@ import io.omega.server.Request;
 import io.omega.server.RequestChannel;
 import io.omega.server.Response;
 
-public class GroupCoordinatorHandler implements KafkaApiHandler {
+public class CoordinatorRequestHandler implements KafkaApiHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GroupCoordinatorHandler.class);
 
     KafkaRequestDispatcher dispatcher;
     MetadataCache metadataCache;
 
-    public GroupCoordinatorHandler(KafkaRequestDispatcher dispatcher, MetadataCache metadataCache) {
+    public CoordinatorRequestHandler(KafkaRequestDispatcher dispatcher, MetadataCache metadataCache) {
         this.dispatcher = dispatcher;
         this.metadataCache = metadataCache;
-        dispatcher.registerHandler(ApiKeys.GROUP_COORDINATOR, this);
+        dispatcher.registerHandler(ApiKeys.JOIN_GROUP, this);
+        dispatcher.registerHandler(ApiKeys.LEAVE_GROUP, this);
+        dispatcher.registerHandler(ApiKeys.HEARTBEAT, this);
+        dispatcher.registerHandler(ApiKeys.SYNC_GROUP, this);
+        dispatcher.registerHandler(ApiKeys.OFFSET_COMMIT, this);
+        dispatcher.registerHandler(ApiKeys.OFFSET_FETCH, this);
     }
+
     @Override
     public void handle(Request req, RequestChannel requestChannel, KafkaProtocolClient client) {
-        GroupCoordinatorRequest request = (GroupCoordinatorRequest) req.body();
-        Struct responseBody = client.sendAnyNode(ApiKeys.GROUP_COORDINATOR, req.header().apiVersion(), request, 1000000);
-        GroupCoordinatorResponse response = new GroupCoordinatorResponse(responseBody);
-        Node c = response.node();
-
-        // TODO: Remove hardcoded port and host.
-        GroupCoordinatorResponse proxyResponse = new GroupCoordinatorResponse(response.errorCode(), new Node(c.id(), c.host(), 9088, c.rack()));
+        String groupId = (String) req.body().toStruct().get("group_id");
+        Struct responseBody = client.sendSync(metadataCache.coordinator(groupId), ApiKeys.forId(req.header().apiKey()), req.header().apiVersion(), req.body(), 1000000);
 
         ResponseHeader responseHeader = new ResponseHeader(req.header().correlationId());
-        requestChannel.sendResponse(new Response(req, new ResponseSend(req.connectionId(), responseHeader, proxyResponse.toStruct())));
+        requestChannel.sendResponse(new Response(req, new ResponseSend(req.connectionId(), responseHeader, responseBody)));
     }
 }

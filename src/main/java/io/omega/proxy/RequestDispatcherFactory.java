@@ -15,6 +15,7 @@ public class RequestDispatcherFactory {
         new ProduceHandler(dis, mc);
         new GroupCoordinatorHandler(dis, mc);
         new ListOffsetsHandler(dis, mc);
+        new CoordinatorRequestHandler(dis, mc);
         return dis;
     }
 }
