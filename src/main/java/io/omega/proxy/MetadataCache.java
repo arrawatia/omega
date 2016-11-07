@@ -74,12 +74,16 @@ public class MetadataCache {
     }
 
     public Node controller() {
+        if(this.controller == null){
+            fetchMetadata();
+        }
         return this.controller;
     }
 
     public void updateCoordinatorForGroup(String groupId, Node coordinator){
         groupIdToCoordinator.put(groupId, coordinator);
     }
+
     public Node coordinator(String groupId){
         Node coordinator = groupIdToCoordinator.getOrDefault(groupId, null);
         if(coordinator == null){

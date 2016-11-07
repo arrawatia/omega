@@ -1,10 +1,7 @@
 package io.omega.proxy;
 
-import org.apache.kafka.common.Node;
 import org.apache.kafka.common.protocol.ApiKeys;
 import org.apache.kafka.common.protocol.types.Struct;
-import org.apache.kafka.common.requests.GroupCoordinatorRequest;
-import org.apache.kafka.common.requests.GroupCoordinatorResponse;
 import org.apache.kafka.common.requests.ResponseHeader;
 import org.apache.kafka.common.requests.ResponseSend;
 import org.slf4j.Logger;
@@ -31,6 +28,8 @@ public class CoordinatorRequestHandler implements KafkaApiHandler {
         dispatcher.registerHandler(ApiKeys.SYNC_GROUP, this);
         dispatcher.registerHandler(ApiKeys.OFFSET_COMMIT, this);
         dispatcher.registerHandler(ApiKeys.OFFSET_FETCH, this);
+        dispatcher.registerHandler(ApiKeys.LIST_GROUPS, this);
+        dispatcher.registerHandler(ApiKeys.DESCRIBE_GROUPS, this);
     }
 
     @Override

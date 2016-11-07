@@ -19,4 +19,7 @@
 		 bin/kafka-topics.sh --zookeeper localhost:2181/boof --create --topic bar --replication-factor 1 --partitions 10
 		 seq 10000 | kafkacat -P -b localhost:9088 -p -1 -t bar
 		 bin/kafka-console-consumer.sh --topic bar --bootstrap-server localhost:9088 --new-consumer --from-beginning --max-messages 20
+         
+         kafkacat -X api.version.request=true -L -b localhost:9088
 
+        

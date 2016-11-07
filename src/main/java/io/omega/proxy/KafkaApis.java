@@ -18,7 +18,7 @@ public class KafkaApis implements KafkaRequestDispatcher {
     private static final Logger log = LoggerFactory.getLogger(KafkaApis.class);
 
     private final KafkaProtocolClient client;
-    private final KafkaApiHandler[] handlerTable = new KafkaApiHandler[ApiKeys.MAX_API_KEY];
+    private final KafkaApiHandler[] handlerTable = new KafkaApiHandler[ApiKeys.MAX_API_KEY + 1];
 
     public KafkaApis(Map<String, String> cfg) {
         this.client = new KafkaProtocolClient(cfg);
@@ -50,6 +50,7 @@ public class KafkaApis implements KafkaRequestDispatcher {
 
     @Override
     public void registerHandler(ApiKeys apiKey, KafkaApiHandler handler) {
+        log.debug("Registering handler {} for {}({})", handler, apiKey, apiKey.id);
         handlerTable[apiKey.id] = handler;
     }
 }

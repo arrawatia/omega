@@ -43,6 +43,7 @@ public class KafkaProxyServer {
             requestHandlerPool.startup();
             shutdownLatch.await();
         } catch (Throwable e) {
+            e.printStackTrace();
             System.exit(1);
         }
         System.exit(0);

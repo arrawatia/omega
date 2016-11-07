@@ -16,6 +16,8 @@ public class RequestDispatcherFactory {
         new GroupCoordinatorHandler(dis, mc);
         new ListOffsetsHandler(dis, mc);
         new CoordinatorRequestHandler(dis, mc);
+        new TopicRequestHandler(dis, mc);
+        new ApiVersionsHandler(dis, mc);
         return dis;
     }
 }
