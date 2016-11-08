@@ -16,6 +16,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import io.omega.ProxyServerConfig;
 import io.omega.client.KafkaProtocolClient;
 
 public class MetadataCache {
@@ -29,10 +30,9 @@ public class MetadataCache {
     private final KafkaProtocolClient client;
     private int timeOutInMs = 100000;
 
-    public MetadataCache(Map<String, String> cfg) {
+    public MetadataCache(ProxyServerConfig cfg) {
             this.client = new KafkaProtocolClient(cfg);
     }
-
 
     public void update(MetadataResponse metadata) {
 

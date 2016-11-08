@@ -12,13 +12,10 @@ import java.util.Map;
 
 import io.omega.client.KafkaProtocolClient;
 
-/**
- * Created by sumit on 10/26/16.
- */
 public class TestProxy {
 
     public static void main(String[] args) {
-        Map<String, String> cfg = new HashMap<>();
+        Map<String, Object> cfg = new HashMap<>();
         cfg.put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, "localhost:9088");
         KafkaProtocolClient client = new KafkaProtocolClient(cfg);
         System.out.print(client.findAllBrokers(1000));
@@ -28,7 +25,7 @@ public class TestProxy {
 //        GroupCoordinatorResponse response = new GroupCoordinatorResponse(responseBody);
 //        Errors.forCode(response.errorCode()).maybeThrow();
 //        System.out.print(response.node());
-
+//
         ArrayList<String> t = null;
         MetadataRequest mrequest = new MetadataRequest(t);
         Struct mresp = client.sendAnyNode(ApiKeys.METADATA, mrequest, 100000);

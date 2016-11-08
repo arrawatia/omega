@@ -4,8 +4,7 @@ import org.apache.kafka.common.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Map;
-
+import io.omega.ProxyServerConfig;
 import io.omega.server.RequestChannel;
 
 public class KafkaRequestHandlerPool {
@@ -16,12 +15,12 @@ public class KafkaRequestHandlerPool {
     private final int brokerId;
     private final RequestChannel requestChannel;
     private final int numThreads;
-    private final Map<String, String> cfg;
+    private final ProxyServerConfig config;
 
-    public KafkaRequestHandlerPool(int brokerId, RequestChannel requestChannel, Map<String, String> cfg, int numThreads) {
+    public KafkaRequestHandlerPool(int brokerId, RequestChannel requestChannel, ProxyServerConfig config, Integer numThreads) {
         this.brokerId = brokerId;
         this.requestChannel = requestChannel;
-        this.cfg = cfg;
+        this.config = config;
         this.numThreads = numThreads;
         this.threads = new Thread[numThreads];
         this.runnables = new KafkaRequestHandler[numThreads];
@@ -31,10 +30,12 @@ public class KafkaRequestHandlerPool {
 
 //        this.logIdent = "[Kafka Request Handler on Broker " + brokerId + "], "
     }
-    public void startup(){
+
+
+    public void startup() {
         for (int i = 0; i < numThreads; i++) {
 //            runnables[i] = new KafkaRequestHandler(i, brokerId, aggregateIdleMeter, numThreads, requestChannel, factory);
-            runnables[i] = new KafkaRequestHandler(i, brokerId, numThreads, requestChannel, RequestDispatcherFactory.create(cfg));
+            runnables[i] = new KafkaRequestHandler(i, brokerId, numThreads, requestChannel, RequestDispatcherFactory.create(config));
             threads[i] = Utils.daemonThread("kafka-request-handler-" + i, runnables[i]);
             threads[i].start();
         }

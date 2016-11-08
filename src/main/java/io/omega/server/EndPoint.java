@@ -3,6 +3,9 @@ package io.omega.server;
 import org.apache.kafka.common.protocol.SecurityProtocol;
 import org.apache.kafka.common.utils.Utils;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -64,5 +67,14 @@ public class EndPoint {
             hostPort = Utils.formatAddress(host, port);
         }
         return protocolType + "://" + hostPort;
+    }
+
+    public static Map<SecurityProtocol, EndPoint> getEndpoints(List<String> endpointStrings) {
+        Map<SecurityProtocol, EndPoint> endpoints = new HashMap<>();
+        for(String endpointString: endpointStrings) {
+            EndPoint e = EndPoint.createEndPoint(endpointString);
+            endpoints.put(e.protocolType(), e);
+        }
+        return endpoints;
     }
 }

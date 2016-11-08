@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 
+import io.omega.ProxyServerConfig;
 import io.omega.client.KafkaProtocolClient;
 import io.omega.server.Request;
 import io.omega.server.RequestChannel;
@@ -20,7 +21,7 @@ public class KafkaApis implements KafkaRequestDispatcher {
     private final KafkaProtocolClient client;
     private final KafkaApiHandler[] handlerTable = new KafkaApiHandler[ApiKeys.MAX_API_KEY + 1];
 
-    public KafkaApis(Map<String, String> cfg) {
+    public KafkaApis(ProxyServerConfig cfg) {
         this.client = new KafkaProtocolClient(cfg);
     }
 

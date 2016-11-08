@@ -29,7 +29,7 @@ public class KafkaProxyServer {
             CountDownLatch shutdownLatch = new CountDownLatch(1);
 
             socketServer = new SocketServer(config, new Metrics(), new SystemTime());
-            requestHandlerPool = new KafkaRequestHandlerPool(-1, socketServer.requestChannel(), proxycfg, config.getInt(ProxyServerConfig.NumIoThreadsProp));
+            requestHandlerPool = new KafkaRequestHandlerPool(-1, socketServer.requestChannel(), config, config.getInt(ProxyServerConfig.NumIoThreadsProp));
 
             // attach shutdown handler to catch control-c
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {

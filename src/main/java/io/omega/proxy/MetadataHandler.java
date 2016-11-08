@@ -2,6 +2,7 @@ package io.omega.proxy;
 
 import org.apache.kafka.common.Node;
 import org.apache.kafka.common.protocol.ApiKeys;
+import org.apache.kafka.common.protocol.SecurityProtocol;
 import org.apache.kafka.common.protocol.types.Struct;
 import org.apache.kafka.common.requests.MetadataRequest;
 import org.apache.kafka.common.requests.MetadataResponse;
@@ -10,19 +11,24 @@ import org.apache.kafka.common.requests.ResponseSend;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
+import io.omega.ProxyServerConfig;
 import io.omega.client.KafkaProtocolClient;
+import io.omega.server.EndPoint;
 import io.omega.server.Request;
 import io.omega.server.RequestChannel;
 import io.omega.server.Response;
 
 public class MetadataHandler implements KafkaApiHandler {
+    private final ProxyServerConfig config;
     KafkaRequestDispatcher dispatcher ;
     MetadataCache metadataCache;
 
-    public MetadataHandler(KafkaRequestDispatcher dispatcher, MetadataCache metadataCache) {
+    public MetadataHandler(KafkaRequestDispatcher dispatcher, MetadataCache metadataCache, ProxyServerConfig cfg) {
         this.dispatcher = dispatcher;
         this.metadataCache = metadataCache;
+        this.config = cfg;
         dispatcher.registerHandler(ApiKeys.METADATA, this);
     }
 
@@ -54,11 +60,15 @@ public class MetadataHandler implements KafkaApiHandler {
 //                System.out.println("-----brokers -----" + metadata);
 
 
+            // TODO : Support more than one protocol.
+            Map<SecurityProtocol, EndPoint> endpoints = EndPoint.getEndpoints(config.getList(ProxyServerConfig.ListenersProp));
+            EndPoint plainTextEndpoint = endpoints.get(SecurityProtocol.PLAINTEXT);
+
             List<Node> proxyBrokers = new ArrayList<>();
             for (Node b : brokers) {
-                // TODO : Replace hardcoded port and host with config.
-                proxyBrokers.add(new Node(b.id(), b.host(), 9088, b.rack()));
+                proxyBrokers.add(new Node(b.id(), plainTextEndpoint.host(), plainTextEndpoint.port(), b.rack()));
             }
+
 
             MetadataResponse proxyResponse = new MetadataResponse(proxyBrokers, clusterId, controller, metadata, version);
 //                System.out.println("-----proxy responseBody-----" + proxyResponse);

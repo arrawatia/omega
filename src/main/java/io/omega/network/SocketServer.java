@@ -57,7 +57,7 @@ public class SocketServer {
     }
 
     public SocketServer(ProxyServerConfig config, Metrics metrics, Time time) {
-        this.endpoints = getListeners(config.getList(ProxyServerConfig.ListenersProp));
+        this.endpoints = EndPoint.getEndpoints(config.getList(ProxyServerConfig.ListenersProp));
         this.numProcessorThreads = config.getInt(ProxyServerConfig.NumNetworkThreadsProp);
         this.maxQueuedRequests = config.getInt(ProxyServerConfig.QueuedMaxRequestsProp);
         this.totalProcessorThreads = numProcessorThreads * endpoints.size();
@@ -89,14 +89,7 @@ public class SocketServer {
 //        }
     }
 
-    private Map<SecurityProtocol, EndPoint> getListeners(List<String> endpointStrings) {
-        Map<SecurityProtocol, EndPoint> endpoints = new HashMap<>();
-        for(String endpointString: endpointStrings) {
-            EndPoint e = EndPoint.createEndPoint(endpointString);
-            endpoints.put(e.protocolType(), e);
-        }
-        return endpoints;
-    }
+
 
     /**
      * Start the socket server

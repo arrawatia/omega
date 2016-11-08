@@ -25,10 +25,11 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import io.omega.ProxyServerConfig;
 
 /**
  * This is a partial Java port of
@@ -44,7 +45,7 @@ public class KafkaProtocolClient {
     private final List<InetSocketAddress> brokerAddresses;
     private final List<Node> bootStrapBrokers;
 
-    public KafkaProtocolClient(Map<String, String> config) {
+    public KafkaProtocolClient(Map<String, Object> config) {
 
         MetadataClientConfig adminCfg = new MetadataClientConfig(config);
         time = new SystemTime();
@@ -79,6 +80,10 @@ public class KafkaProtocolClient {
             MetadataClientConfig.defaultRequestTimeoutMs);
 
         this.bootStrapBrokers = bootstrapCluster.nodes();
+    }
+
+    public KafkaProtocolClient(ProxyServerConfig cfg) {
+        this(cfg.originals());
     }
 
     public List<InetSocketAddress> getBrokerAddresses() {
