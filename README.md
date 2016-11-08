@@ -22,4 +22,20 @@
          
          kafkacat -X api.version.request=true -L -b localhost:9088
 
+TODO:
+-----
+* Exception handling review.
+* Refactor handler class hierarchy.
+* Add support for sessions.
+* Combine config for client and server.
+* Add metrics.
+* Enable security.
+    * Support multiple endpoints
+    * Authentication
+* Quotas
+* Tests
+    * Modify existing protocol unit tests to run against the proxy
+    * Modify existing system tests to run against the proxy.
+* Profile and benchmark.
+
         
