@@ -1,3 +1,5 @@
+package test;
+
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.common.Node;
 import org.apache.kafka.common.protocol.ApiKeys;

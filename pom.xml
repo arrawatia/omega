@@ -23,42 +23,25 @@
     <properties>
         <slf4j.version>1.7.21</slf4j.version>
         <log4j.version>1.2.17</log4j.version>
+        <kafka.version>0.10.1.0</kafka.version>
     </properties>
 
     <dependencies>
-        <!--<dependency>-->
-            <!--<groupId>org.slf4j</groupId>-->
-            <!--<artifactId>slf4j-ext</artifactId>-->
-            <!--<version>1.7.21</version>-->
-        <!--</dependency>-->
-        <!--<dependency>-->
-            <!--<groupId>org.elasticsearch</groupId>-->
-            <!--<artifactId>elasticsearch</artifactId>-->
-            <!--<version>2.4.0</version>-->
-        <!--</dependency>-->
         <dependency>
             <groupId>org.apache.kafka</groupId>
             <artifactId>kafka-clients</artifactId>
-            <version>0.10.1.0</version>
+            <version>${kafka.version}</version>
         </dependency>
         <!--<dependency>-->
-            <!--<groupId>org.apache.kafka</groupId>-->
-            <!--<artifactId>kafka_2.11</artifactId>-->
-            <!--<version>0.10.1.0</version>-->
+        <!--<groupId>org.apache.kafka</groupId>-->
+        <!--<artifactId>kafka_2.11</artifactId>-->
+        <!--<version>0.10.1.0</version>-->
         <!--</dependency>-->
         <dependency>
             <groupId>log4j</groupId>
             <artifactId>log4j</artifactId>
             <version>${log4j.version}</version>
         </dependency>
-
-
-
-        <!--<dependency>-->
-            <!--<groupId>log4j</groupId>-->
-            <!--<artifactId>apache-log4j-extras</artifactId>-->
-            <!--<version>${log4j.version}</version>-->
-        <!--</dependency>-->
 
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -71,19 +54,5 @@
             <artifactId>slf4j-log4j12</artifactId>
             <version>${slf4j.version}</version>
         </dependency>
-        <dependency>
-            <groupId>com.google.dagger</groupId>
-            <artifactId>dagger</artifactId>
-            <version>2.7</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.google.dagger</groupId>
-            <artifactId>dagger-compiler</artifactId>
-            <version>2.7</version>
-            <optional>true</optional>
-        </dependency>
-
-
     </dependencies>
 </project>

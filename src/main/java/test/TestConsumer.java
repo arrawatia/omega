@@ -1,3 +1,5 @@
+package test;
+
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -10,7 +12,7 @@ import java.util.Collections;
 import java.util.Properties;
 import java.util.regex.Pattern;
 
-public class Foo {
+public class TestConsumer {
 
     private static final Pattern HOST_PORT_PATTERN = Pattern.compile("^(.*)://\\[?([0-9a-zA-Z\\-%._:]*)\\]?:([0-9]+)");
 

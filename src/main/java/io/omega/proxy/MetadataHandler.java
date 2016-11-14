@@ -22,7 +22,7 @@ import io.omega.server.Response;
 
 public class MetadataHandler implements KafkaApiHandler {
     private final ProxyServerConfig config;
-    KafkaRequestDispatcher dispatcher ;
+    KafkaRequestDispatcher dispatcher;
     MetadataCache metadataCache;
 
     public MetadataHandler(KafkaRequestDispatcher dispatcher, MetadataCache metadataCache, ProxyServerConfig cfg) {
@@ -34,46 +34,44 @@ public class MetadataHandler implements KafkaApiHandler {
 
     @Override
     public void handle(Request req, RequestChannel requestChannel, KafkaProtocolClient client) {
-        if (req.header().apiKey() == 3) {
 
-            MetadataRequest request = (MetadataRequest) req.body();
+        MetadataRequest request = (MetadataRequest) req.body();
 //            System.out.println("-----API_KEY-----" + ApiKeys.forId(req.header().apiKey()) +
 //                    "-----request-----" + request.toString());
 
-            int timeOutInMs = 1000;
-            Struct responseBody = client.sendAnyNode(ApiKeys.METADATA, req.header().apiVersion(), request, timeOutInMs);
+        int timeOutInMs = 1000;
+        Struct responseBody = client.sendAnyNode(ApiKeys.METADATA, req.header().apiVersion(), request, timeOutInMs);
 //                System.out.println("-----responseBody-----" + responseBody);
 
-            ResponseHeader responseHeader = new ResponseHeader(req.header().correlationId());
-            MetadataResponse response = new MetadataResponse(responseBody);
+        ResponseHeader responseHeader = new ResponseHeader(req.header().correlationId());
+        MetadataResponse response = new MetadataResponse(responseBody);
 
-            List<Node> brokers = new ArrayList<>(response.brokers());
-            String clusterId = response.clusterId();
-            int controller = -1;
-            if (response.controller() != null) {
-                controller = response.controller().id();
+        List<Node> brokers = new ArrayList<>(response.brokers());
+        String clusterId = response.clusterId();
+        int controller = -1;
+        if (response.controller() != null) {
+            controller = response.controller().id();
 
-            }
-            List<MetadataResponse.TopicMetadata> metadata = new ArrayList<>(response.topicMetadata());
-            metadataCache.update(response);
-            int version = req.header().apiVersion();
+        }
+        List<MetadataResponse.TopicMetadata> metadata = new ArrayList<>(response.topicMetadata());
+        metadataCache.update(response);
+        int version = req.header().apiVersion();
 //                System.out.println("-----brokers -----" + metadata);
 
 
-            // TODO : Support more than one protocol.
-            Map<SecurityProtocol, EndPoint> endpoints = EndPoint.getEndpoints(config.getList(ProxyServerConfig.ListenersProp));
-            EndPoint plainTextEndpoint = endpoints.get(SecurityProtocol.PLAINTEXT);
+        // TODO : Support more than one protocol.
+        Map<SecurityProtocol, EndPoint> endpoints = EndPoint.getEndpoints(config.getList(ProxyServerConfig.ListenersProp));
+        EndPoint plainTextEndpoint = endpoints.get(SecurityProtocol.PLAINTEXT);
 
-            List<Node> proxyBrokers = new ArrayList<>();
-            for (Node b : brokers) {
-                proxyBrokers.add(new Node(b.id(), plainTextEndpoint.host(), plainTextEndpoint.port(), b.rack()));
-            }
+        List<Node> proxyBrokers = new ArrayList<>();
+        for (Node b : brokers) {
+            proxyBrokers.add(new Node(b.id(), plainTextEndpoint.host(), plainTextEndpoint.port(), b.rack()));
+        }
 
 
-            MetadataResponse proxyResponse = new MetadataResponse(proxyBrokers, clusterId, controller, metadata, version);
+        MetadataResponse proxyResponse = new MetadataResponse(proxyBrokers, clusterId, controller, metadata, version);
 //                System.out.println("-----proxy responseBody-----" + proxyResponse);
 
-            requestChannel.sendResponse(new Response(req, new ResponseSend(req.connectionId(), responseHeader, proxyResponse.toStruct())));
-        }
+        requestChannel.sendResponse(new Response(req, new ResponseSend(req.connectionId(), responseHeader, proxyResponse.toStruct())));
     }
 }
