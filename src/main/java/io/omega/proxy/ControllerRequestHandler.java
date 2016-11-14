@@ -12,11 +12,11 @@ import io.omega.server.Request;
 import io.omega.server.RequestChannel;
 import io.omega.server.Response;
 
-public class TopicRequestHandler implements KafkaApiHandler {
+public class ControllerRequestHandler implements KafkaApiHandler {
     KafkaRequestDispatcher dispatcher;
     MetadataCache metadataCache;
 
-    public TopicRequestHandler(KafkaRequestDispatcher dispatcher, MetadataCache metadataCache) {
+    public ControllerRequestHandler(KafkaRequestDispatcher dispatcher, MetadataCache metadataCache) {
         this.dispatcher = dispatcher;
         this.metadataCache = metadataCache;
         dispatcher.registerHandler(ApiKeys.CREATE_TOPICS, this);

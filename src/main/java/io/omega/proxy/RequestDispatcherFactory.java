@@ -1,7 +1,5 @@
 package io.omega.proxy;
 
-import java.util.Map;
-
 import io.omega.ProxyServerConfig;
 
 /**
@@ -18,7 +16,7 @@ public class RequestDispatcherFactory {
         new GroupCoordinatorHandler(dis, mc, cfg);
         new ListOffsetsHandler(dis, mc);
         new CoordinatorRequestHandler(dis, mc);
-        new TopicRequestHandler(dis, mc);
+        new ControllerRequestHandler(dis, mc);
         new ApiVersionsHandler(dis, mc);
         return dis;
     }
